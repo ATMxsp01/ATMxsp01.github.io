@@ -26,8 +26,8 @@ const path = `/posts/${slug}`;
       // 创建新的 Gitalk 实例
       const gitalk = new Gitalk({
         ...gitalkConfig,
-        id: window.location.pathname,
-        distractionFreeMode: false
+		// id: window.location.pathname,
+		// distractionFreeMode: false
       });
       
       // 渲染评论
