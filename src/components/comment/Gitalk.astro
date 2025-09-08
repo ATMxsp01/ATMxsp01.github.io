@@ -1,0 +1,64 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { commentConfig } from "@/config";
+
+interface Props {
+  post: CollectionEntry<"posts">;
+}
+
+const { id, data, slug } = Astro.props.post;
+
+const path = `/posts/${slug}`;
+---
+
+<div id="gitalk-container"></div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+<script is:inline src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+<script is:inline define:vars={{ gitalkConfig: { ...commentConfig.gitalk, id: path } }}>
+  // 初始化 Gitalk
+  function initGitalk() {
+    // 确保容器元素存在
+    const container = document.getElementById('gitalk-container');
+    if (container) {
+      // 清空容器内容
+      container.innerHTML = '';
+      
+      // 创建新的 Gitalk 实例
+      const gitalk = new Gitalk({
+        ...gitalkConfig,
+        id: window.location.pathname,
+        distractionFreeMode: false
+      });
+      
+      // 渲染评论
+      gitalk.render('gitalk-container');
+    }
+  }
+  
+  // 页面加载时初始化
+  document.addEventListener('DOMContentLoaded', initGitalk);
+  
+  // Swup 页面切换后重新初始化
+  if (window.swup && window.swup.hooks) {
+    window.swup.hooks.on('content:replace', function() {
+      setTimeout(initGitalk, 200);
+    });
+  } else {
+    document.addEventListener('swup:enable', function() {
+      if (window.swup && window.swup.hooks) {
+        window.swup.hooks.on('content:replace', function() {
+          setTimeout(initGitalk, 200);
+        });
+      }
+    });
+  }
+  
+  // 自定义事件监听
+  document.addEventListener('mizuki:page:loaded', function() {
+    const container = document.getElementById('gitalk-container');
+    if (container) {
+      console.log('[Gitalk] 通过自定义事件重新初始化');
+      initGitalk();
+    }
+  });
+</script>
