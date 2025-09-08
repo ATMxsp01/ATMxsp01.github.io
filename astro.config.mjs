@@ -29,7 +29,7 @@ import { remarkReadingTime } from "./src/plugins/remark-reading-time.mjs";
 export default defineConfig({
 	site: "https://atmxsp01.github.io/",
 
-	base: "ATMxsp01.github.io",
+	// base: "ATMxsp01.github.io",
 	trailingSlash: "always",
 	integrations: [
 		tailwind({
