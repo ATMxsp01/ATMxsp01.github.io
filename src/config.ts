@@ -270,10 +270,31 @@ export const expressiveCodeConfig: ExpressiveCodeConfig = {
 };
 
 export const commentConfig: CommentConfig = {
-	enable: false, // 启用评论功能。当设置为 false 时，评论组件将不会显示在文章区域。
+	enable: false, // 启用评论功能。设置为 "twikoo" 使用Twikoo评论系统，设置为 "gitalk" 使用Gitalk评论系统，设置为 false 不启用评论功能
 	twikoo: {
 		envId: "https://twikoo.vercel.app",
 	},
+	gitalk: {
+		clientID: "YOUR_GITHUB_CLIENT_ID",
+		clientSecret: "YOUR_GITHUB_CLIENT_SECRET",
+		repo: "YOUR_REPO_NAME",
+		owner: "YOUR_GITHUB_USERNAME",
+		admin: ["YOUR_GITHUB_USERNAME"],
+		// 以下为可选配置
+		// id: window.location.pathname,      // 页面唯一标识，默认为 window.location.pathname
+		// number: -1,                        // Issue number, 默认为 -1 (自动创建)
+		// labels: ["Gitalk"],               // GitHub issue labels
+		// title: document.title,             // GitHub issue title
+		// body: location.href,               // GitHub issue body
+		// language: navigator.language,      // 设置语言
+		// perPage: 10,                       // 每页评论数
+		// distractionFreeMode: false,        // 免打扰模式
+		// pagerDirection: "last",           // 分页排序方式: last 或 first
+		// createIssueManually: false,        // 是否手动创建 Issue
+		// proxy: "https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token",
+		// flipMoveOptions: {},               // flipMove 组件配置
+		// backgroundColor: "#fff"           // 背景颜色
+	}
 };
 
 export const announcementConfig: AnnouncementConfig = {

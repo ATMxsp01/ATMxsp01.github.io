@@ -130,14 +130,35 @@ export type LicenseConfig = {
 // 评论配置
 
 export type CommentConfig = {
-	enable: boolean; // 是否启用评论功能
+	enable: "twikoo" | "gitalk" | false; // 选择启用的评论系统，false表示不启用
 	twikoo?: TwikooConfig;
+	gitalk?: GitalkConfig;
 };
 
 type TwikooConfig = {
 	envId: string;
 	region?: string;
 	lang?: string;
+};
+
+type GitalkConfig = {
+	clientID: string;
+	clientSecret: string;
+	repo: string;
+	owner: string;
+	admin: string[];
+	id?: string;
+	number?: number;
+	labels?: string[];
+	title?: string;
+	body?: string;
+	language?: string;
+	pagination?: number;
+	perPage?: number;
+	distractionFreeMode?: boolean;
+	proxy?: string;
+	flipMoveOptions?: any;
+	backgroundColor?: string;
 };
 
 export type LIGHT_DARK_MODE =
