@@ -65,6 +65,11 @@ jobs:
 
       - name: Run Astro Build
         run: pnpm astro build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: './dist'
   
   deploy:
     # Add a dependency to the build job
