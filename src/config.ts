@@ -270,16 +270,16 @@ export const expressiveCodeConfig: ExpressiveCodeConfig = {
 };
 
 export const commentConfig: CommentConfig = {
-	enable: false, // 启用评论功能。设置为 "twikoo" 使用Twikoo评论系统，设置为 "gitalk" 使用Gitalk评论系统，设置为 false 不启用评论功能
+	enable: 'gitalk', // 启用评论功能。设置为 "twikoo" 使用Twikoo评论系统，设置为 "gitalk" 使用Gitalk评论系统，设置为 false 不启用评论功能
 	twikoo: {
 		envId: "https://twikoo.vercel.app",
 	},
 	gitalk: {
-		clientID: "YOUR_GITHUB_CLIENT_ID",
-		clientSecret: "YOUR_GITHUB_CLIENT_SECRET",
-		repo: "YOUR_REPO_NAME",
-		owner: "YOUR_GITHUB_USERNAME",
-		admin: ["YOUR_GITHUB_USERNAME"],
+		clientID: "Ov23lid4OvhvQQgJHGpC",
+		clientSecret: "a07d35b446b0c39fb7702f644a03eacda47b75f5",
+		repo: " ATMxsp01/ATMxsp01.github.io ",
+		owner: "ATMxsp01",
+		admin: ["ATMxsp01"],
 		// 以下为可选配置
 		// id: window.location.pathname,      // 页面唯一标识，默认为 window.location.pathname
 		// number: -1,                        // Issue number, 默认为 -1 (自动创建)
