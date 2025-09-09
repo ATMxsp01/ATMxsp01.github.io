@@ -5,6 +5,8 @@
 /* 导入动画样式 */
 @import './transition.css';
 @import './animation-enhancements.css';
+/* 导入 Gitalk 样式 */
+@import './gitalk.css';
 
 @tailwind base;
 @tailwind components;
