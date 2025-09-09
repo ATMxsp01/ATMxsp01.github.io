@@ -277,7 +277,7 @@ export const commentConfig: CommentConfig = {
 	gitalk: {
 		clientID: "Ov23lid4OvhvQQgJHGpC",
 		clientSecret: "a07d35b446b0c39fb7702f644a03eacda47b75f5",
-		repo: " ATMxsp01",
+		repo: "ATMxsp01.github.io",
 		owner: "ATMxsp01",
 		admin: ["ATMxsp01"],
 		// 以下为可选配置
