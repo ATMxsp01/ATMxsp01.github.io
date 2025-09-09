@@ -15,21 +15,20 @@ const path = `/posts/${slug}`;
 <link rel="stylesheet" href="/assets/css/gitalk.css">
 <script is:inline src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
 <script is:inline define:vars={{ gitalkConfig: { ...commentConfig.gitalk, id: path } }}>
-  // 初始化 Gitalk
-  function initGitalk() {
-    // 确保容器元素存在
-    const container = document.getElementById('gitalk-container');
-    if (container) {
-      // 清空容器内容
-      container.innerHTML = '';
-    }
-	
-	// 创建新的 Gitalk 实例
 	const gitalk = new Gitalk({
 	...gitalkConfig,
 	// id: window.location.pathname,
 	// distractionFreeMode: false
 	});
+	// 初始化 Gitalk
+	function initGitalk() {
+		// 确保容器元素存在
+		const container = document.getElementById('gitalk-container');
+		if (container) {
+		// 清空容器内容
+		container.innerHTML = '';
+		}
+	// 创建新的 Gitalk 实例
 	
 	// 渲染评论
 	gitalk.render('gitalk-container');
