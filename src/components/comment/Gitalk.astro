@@ -22,17 +22,17 @@ const path = `/posts/${slug}`;
     if (container) {
       // 清空容器内容
       container.innerHTML = '';
-      
-      // 创建新的 Gitalk 实例
-      const gitalk = new Gitalk({
-        ...gitalkConfig,
-		// id: window.location.pathname,
-		// distractionFreeMode: false
-      });
-      
-      // 渲染评论
-      gitalk.render('gitalk-container');
     }
+	
+	// 创建新的 Gitalk 实例
+	const gitalk = new Gitalk({
+	...gitalkConfig,
+	// id: window.location.pathname,
+	// distractionFreeMode: false
+	});
+	
+	// 渲染评论
+	gitalk.render('gitalk-container');
   }
   
   // 页面加载时初始化

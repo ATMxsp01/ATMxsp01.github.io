@@ -349,3 +349,50 @@ html {
 :root:not(.dark) .custom-md spoiler {
   --_spoiler-mask: color-mix(in oklch, var(--primary) 55%, white 45%);
 }
+
+:root {
+    --c-brand: #3eaf7c;
+    --c-brand-light: #4abf8a;
+  
+    --c-bg: #ffffff;
+    --c-bg-light: #f3f4f5;
+    --c-bg-lighter: #eeeeee;
+    --c-bg-navbar: var(--c-bg);
+    --c-bg-sidebar: var(--c-bg);
+    --c-bg-arrow: #cccccc;
+  
+    --c-text: #2c3e50;
+    --c-text-accent: var(--c-brand);
+    --c-text-light: #3a5169;
+    --c-text-lighter: #4e6e8e;
+    --c-text-lightest: #6a8bad;
+    --c-text-quote: #999999;
+  
+    --c-border: #eaecef;
+    --c-border-dark: #dfe2e5;
+  
+    --c-tip: #42b983;
+    --c-tip-bg: var(--c-bg-light);
+    --c-tip-title: var(--c-text);
+    --c-tip-text: var(--c-text);
+    --c-tip-text-accent: var(--c-text-accent);
+    --c-warning: #e7c000;
+    --c-warning-bg: #fffae3;
+    --c-warning-title: #ad9000;
+    --c-warning-text: #746000;
+    --c-warning-text-accent: var(--c-text);
+    --c-danger: #cc0000;
+    --c-danger-bg: #ffe0e0;
+    --c-danger-title: #990000;
+    --c-danger-text: #660000;
+    --c-danger-text-accent: var(--c-text);
+    --c-details-bg: #eeeeee;
+  
+    --c-badge-tip: var(--c-tip);
+    --c-badge-warning: var(--c-warning);
+    --c-badge-danger: var(--c-danger);
+  
+    
+    --t-color:0.3s ease;
+
+}
