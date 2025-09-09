@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from "astro:content";
 import { commentConfig } from "@/config";
+import Gitalk_obj from 'gitalk'
 
 interface Props {
   post: CollectionEntry<"posts">;
@@ -9,18 +10,18 @@ interface Props {
 const { id, data, slug } = Astro.props.post;
 
 const path = `/posts/${slug}`;
+
+const gitalkConfig = commentConfig.gitalk ? {...commentConfig.gitalk, id:path} : null
+const gitalk = gitalkConfig ? new Gitalk_obj(gitalkConfig) : null
+
 ---
 
 <div id="gitalk-container"></div>
+{gitalk ?
 <link rel="stylesheet" href="/assets/css/gitalk.css">
-<script is:inline src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
-<script is:inline define:vars={{ gitalkConfig: { ...commentConfig.gitalk, id: path } }}>
-	const gitalk = new Gitalk({
-	...gitalkConfig,
-	// id: window.location.pathname,
-	// distractionFreeMode: false
-	});
-	// 初始化 Gitalk
+<!-- <script is:inline src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script> -->
+<script is:inline define:vars={{ gitalk: gitalk }}>
+	
 	function initGitalk() {
 		// 确保容器元素存在
 		const container = document.getElementById('gitalk-container');
@@ -61,3 +62,5 @@ const path = `/posts/${slug}`;
     }
   });
 </script>
+: null
+}
