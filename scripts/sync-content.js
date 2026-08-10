@@ -138,32 +138,38 @@ for (const mapping of contentMappings) {
 }
 
 console.log("\n内容同步完成\n");
-try {
-	// 1. 获取 content 分支名
-	const branch = execSync("git rev-parse --abbrev-ref HEAD", {
-		cwd: CONTENT_DIR,
-	})
-		.toString()
-		.trim();
 
-	// 2. 获取 content commit hash（短）
-	const hash = execSync("git rev-parse --short HEAD", {
-		cwd: CONTENT_DIR,
-	})
-		.toString()
-		.trim();
+// 注：默认不再自动提交主仓库（AGENTS.md 决策 D2：内容版本由内容仓库自管，
+// 不把内容 hash/符号链接记录进代码仓库）。如需记录内容版本，可设置
+// AUTO_COMMIT_CONTENT=true 恢复原行为。
+if (process.env.AUTO_COMMIT_CONTENT === "true") {
+	try {
+		// 1. 获取 content 分支名
+		const branch = execSync("git rev-parse --abbrev-ref HEAD", {
+			cwd: CONTENT_DIR,
+		})
+			.toString()
+			.trim();
 
-	// 3. 提交主仓库
-	execSync("git add .", { cwd: rootDir });
+		// 2. 获取 content commit hash（短）
+		const hash = execSync("git rev-parse --short HEAD", {
+			cwd: CONTENT_DIR,
+		})
+			.toString()
+			.trim();
 
-	execSync(
-		`git commit -m "chore(content): sync ${branch}@${hash}"`,
-		{ cwd: rootDir },
-	);
+		// 3. 提交主仓库
+		execSync("git add .", { cwd: rootDir });
 
-	console.log(`已提交内容更新（${branch}@${hash}）`);
-} catch {
-	console.log("没有变化，跳过提交");
+		execSync(
+			`git commit -m "chore(content): sync ${branch}@${hash}"`,
+			{ cwd: rootDir },
+		);
+
+		console.log(`已提交内容更新（${branch}@${hash}）`);
+	} catch {
+		console.log("没有变化，跳过提交");
+	}
 }
 
 // 递归复制函数

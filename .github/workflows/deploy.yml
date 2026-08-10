@@ -37,11 +37,11 @@ jobs:
       
       - name: Build site
         run: pnpm run build
-        # 如果需要启用内容分离,取消以下注释并配置
-        # env:
-        #   ENABLE_CONTENT_SYNC: true
-        #   CONTENT_REPO_URL: ${{ secrets.CONTENT_REPO_URL }}
-        #   USE_SUBMODULE: true
+        env:
+          # 内容分离：从私有内容仓库同步内容
+          # CONTENT_REPO_URL 为 GitHub Actions secret（内嵌 fine-grained PAT）
+          ENABLE_CONTENT_SYNC: true
+          CONTENT_REPO_URL: ${{ secrets.CONTENT_REPO_URL }}
       
       - name: Deploy to pages branch
         uses: JamesIves/github-pages-deploy-action@v4
