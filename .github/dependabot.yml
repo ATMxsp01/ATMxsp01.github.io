@@ -2,6 +2,11 @@ version: 2
 updates:
   - package-ecosystem: "npm"
     directory: "/"
+    # custom（本仓库定制，2026-09-10）：关闭版本更新 PR。
+    # 理由：本博客的依赖跟随 upstream（LyraVoid/Shirone）同步升级；自行升级会让
+    # pnpm-lock.yaml 与上游分叉，导致后续 `git merge upstream/main` 出现大面积冲突。
+    # 漏洞提醒（Dependabot alerts）已在仓库设置中单独开启，不依赖本文件的版本更新。
+    open-pull-requests-limit: 0
     schedule:
       interval: "daily"
     groups:
