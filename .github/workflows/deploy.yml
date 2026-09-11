@@ -1,0 +1,121 @@
+name: Deploy
+
+on:
+  # 代码变更
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "rules/**"
+      - "README*.md"
+      - "*.md"
+  # 内容仓推送后由 trigger-build.yml 发来的事件
+  repository_dispatch:
+    types: [content-updated]
+  # 手动触发；回滚时把 content_ref 填成旧的内容 SHA
+  workflow_dispatch:
+    inputs:
+      content_ref:
+        description: "内容仓 ref 或 commit SHA（留空使用 main）"
+        required: false
+        default: ""
+  # 兜底：dispatch 事件偶尔会丢，每天重建一次保证最终一致
+  schedule:
+    - cron: "17 4 * * *"
+
+# 同一时间只允许一个部署流水线运行；新请求取消正在运行的旧构建
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      CI: true
+    steps:
+      - name: Resolve content ref
+        id: target
+        # 经 env 传递而不是直接内插：client_payload 属于外部输入
+        env:
+          PAYLOAD_SHA: ${{ github.event.client_payload.sha }}
+          INPUT_REF: ${{ github.event.inputs.content_ref }}
+        run: |
+          set -euo pipefail
+          ref="${PAYLOAD_SHA:-}"
+          [ -n "$ref" ] || ref="${INPUT_REF:-}"
+          [ -n "$ref" ] || ref="main"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout theme
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          version: 9.14.4
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Restore build caches
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          # ⚠️ 只缓存缩略图：它按源图内容哈希逐张校验复用，跨 commit 命中是安全的。
+          #
+          # 【为什么不再缓存 .astro / node_modules/.astro（2026-09-10 实测）】
+          #   node_modules/.astro/data-store.json 是 Astro 内容层存储，按文件摘要缓存，
+          #   但对**已删除**的内容文件并不总会清理条目 —— 恢复旧包会把已删内容整份带回来。
+          #   而本 step 的 key 含内容仓 SHA（每次内容提交都变），主键几乎永不精确命中，
+          #   于是每次都会走 restore-keys 前缀兜底、恢复**上一个内容版本**的包：
+          #   实测后果 = 内容仓已剪掉的 demo 动态在线上照旧渲染（pruned 123 了却仍显示「6 条动态」）。
+          #   去掉这两个路径后每次从头解析内容（本站 20 页，几秒），换来"删除内容一定生效"。
+          path: |
+            public/assets/moments/thumbnails
+          key: ${{ runner.os }}-shirone-${{ hashFiles('pnpm-lock.yaml', 'astro.config.mjs') }}-${{ steps.target.outputs.ref }}
+          restore-keys: |
+            ${{ runner.os }}-shirone-${{ hashFiles('pnpm-lock.yaml', 'astro.config.mjs') }}-
+            ${{ runner.os }}-shirone-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      # 独立成步：内容/配置问题与构建问题在日志里天然分开，且 fonts:subset 需要内容与配置已就位
+      - name: Materialize content and config
+        run: pnpm content:sync
+        env:
+          CONTENT_REPO_URL: ${{ secrets.CONTENT_REPO_URL }}
+          CONTENT_REPO_REF: ${{ steps.target.outputs.ref }}
+
+      - name: Build site
+        run: pnpm build
+        env:
+          CONTENT_REPO_URL: ${{ secrets.CONTENT_REPO_URL }}
+          CONTENT_REPO_REF: ${{ steps.target.outputs.ref }}
+          # 复用上一步已 clone 的 .content-src/，避免重复拉取
+          CONTENT_SYNC_PULL: "false"
+          BILI_SESSDATA: ${{ secrets.BILI_SESSDATA }}
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
