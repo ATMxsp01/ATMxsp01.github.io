@@ -174,10 +174,10 @@ const titleLabel =
 	color: var(--on-surface)
 	transition:
 		box-shadow var(--m3e-duration-medium) var(--m3e-easing-emphasized-decelerate),
-		background-color var(--m3e-duration-medium) var(--m3e-easing-standard)
+		transform var(--m3e-duration-medium) var(--m3e-easing-emphasized-decelerate)
 	&:hover
 		box-shadow: var(--m3e-elevation-2)
-		background: unquote("color-mix(in oklab, var(--on-surface) 4%, var(--card-bg))")
+		transform: translateY(-2px)
 
 	&__body
 		flex: 1
