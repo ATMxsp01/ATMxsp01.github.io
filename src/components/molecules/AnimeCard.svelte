@@ -23,7 +23,9 @@ let {
 }: { anime: AnimeItem; delay?: number } = $props();
 
 const statusMeta = $derived(ANIME_STATUS_META[anime.status]);
-const isWatching = $derived(anime.status === "watching" && anime.progress !== undefined);
+const isWatching = $derived(
+	anime.status === "watching" && anime.progress !== undefined,
+);
 const progressRatio = $derived(
 	anime.progress && anime.progress.total > 0
 		? Math.min(anime.progress.watched / anime.progress.total, 1)
@@ -237,8 +239,8 @@ const metaLine = $derived(
 		flex-direction: column
 		flex: 1
 		min-width: 0
-		gap: 0.375rem
-		padding: 0.75rem 0.875rem 0.875rem
+		gap: var(--m3e-space-1)
+		padding: var(--m3e-space-3) var(--m3e-space-4) var(--m3e-space-4)
 
 	&__header-row
 		display: flex

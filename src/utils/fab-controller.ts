@@ -184,9 +184,10 @@ class FabController {
 		});
 
 		// 解密协调器重建侧栏 TOC 后发出通知，刷新悬浮目录（覆盖面板已打开时解密完成的情况）
-		document.addEventListener("shirone:toc-synced", () =>
-			this.syncFloatingToc(),
-		);
+		document.addEventListener("shirone:toc-synced", () => {
+			this.resetMobileVisibility();
+			this.syncFloatingToc();
+		});
 
 		// 目录项点击平滑跳转并自动收起
 		panel?.addEventListener("click", (e) => {
