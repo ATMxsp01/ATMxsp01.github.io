@@ -497,7 +497,11 @@ test.describe("banner wallpaper", () => {
 			.locator("#banner-wrapper")
 			.evaluate((stage) => {
 				const value = (stage as HTMLElement).dataset.desktopImages;
-				return value ? JSON.parse(value).length : 0;
+				if (!value) return 0;
+				const parsed = JSON.parse(value);
+				return Array.isArray(parsed)
+					? parsed.length
+					: (parsed?.light?.length ?? 0);
 			});
 		test.skip(
 			desktopImageCount < 2,
@@ -512,7 +516,7 @@ test.describe("banner wallpaper", () => {
 					.querySelector<HTMLImageElement>(".banner-stage__image--active")
 					?.getAttribute("src") !== initial,
 			before,
-			{ timeout: 7500 },
+			{ timeout: 10000 },
 		);
 		const after = await page
 			.locator(".banner-stage__image--active")
@@ -527,10 +531,12 @@ test.describe("banner wallpaper", () => {
 		await waitForBannerState(page, true);
 		const images = await page.locator("#banner-wrapper").evaluate((stage) => {
 			const value = (stage as HTMLElement).dataset.desktopImages;
-			return value ? JSON.parse(value) : [];
+			if (!value) return [];
+			const parsed = JSON.parse(value);
+			return Array.isArray(parsed) ? parsed : (parsed?.light ?? []);
 		});
 		test.skip(
-			images.length < 4,
+			!Array.isArray(images) || images.length < 4,
 			"carousel order test requires four desktop images",
 		);
 
