@@ -94,7 +94,6 @@ $effect(() => {
     width: max-content
     padding: var(--m3e-space-2) var(--m3e-space-1)
     border-radius: var(--shape-corner-l)
-    border: 1px solid var(--outline-variant)
     /* StandardMenuTokens.ContainerColor = SurfaceContainerLow. */
     background: var(--surface-container-low)
     box-shadow: var(--m3e-elevation-2)
