@@ -76,7 +76,7 @@ jobs:
       - name: Restore build caches
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          # ⚠️ 只缓存缩略图：它按源图内容哈希逐张校验复用，跨 commit 命中是安全的。
+          # ⚠️ 只缓存**构建期产物**，绝不缓存 .astro / node_modules/.astro。
           #
           # 【为什么不再缓存 .astro / node_modules/.astro（2026-09-10 实测）】
           #   node_modules/.astro/data-store.json 是 Astro 内容层存储，按文件摘要缓存，
@@ -85,8 +85,18 @@ jobs:
           #   于是每次都会走 restore-keys 前缀兜底、恢复**上一个内容版本**的包：
           #   实测后果 = 内容仓已剪掉的 demo 动态在线上照旧渲染（pruned 123 了却仍显示「6 条动态」）。
           #   去掉这两个路径后每次从头解析内容（本站 20 页，几秒），换来"删除内容一定生效"。
+          #
+          # 【为什么番剧的快照与封面**可以**缓存（2026-09-12）】
+          #   与 .astro 的情形**性质相反**，这里是刻意要"旧"：
+          #     两者都是 B 站 API 的构建期产物（.gitignore 已忽略，不进任何仓库），
+          #     缓存是它们在 CI 之间唯一的持久化手段。
+          #   同步若失败或返回空，从缓存恢复的旧快照仍在 → 页面显示"略旧的完整数据"，
+          #   而不是空白。即"过期数据"正是我们想要的降级结果。
+          #   封面文件名是 bili_<seasonId>.webp，按内容寻址，跨 commit 复用是安全的。
           path: |
             public/assets/moments/thumbnails
+            public/assets/anime/covers
+            src/data/anime-snapshots
           key: ${{ runner.os }}-shirone-${{ hashFiles('pnpm-lock.yaml', 'astro.config.mjs') }}-${{ steps.target.outputs.ref }}
           restore-keys: |
             ${{ runner.os }}-shirone-${{ hashFiles('pnpm-lock.yaml', 'astro.config.mjs') }}-
@@ -101,6 +111,65 @@ jobs:
         env:
           CONTENT_REPO_URL: ${{ secrets.CONTENT_REPO_URL }}
           CONTENT_REPO_REF: ${{ steps.target.outputs.ref }}
+
+      - name: Sync anime snapshot (best effort)
+        id: anime
+        # L0：同步失败绝不阻断部署 —— 整个站点不该因为一个番剧页而停止更新
+        continue-on-error: true
+        # L4：封面是**串行**下载的（每张最多 10s 超时），必须设上限以免吃掉 20 分钟的 job 预算
+        timeout-minutes: 12
+        env:
+          BILI_SESSDATA: ${{ secrets.BILI_SESSDATA }}
+        run: |
+          set -uo pipefail
+          SNAP=src/data/anime-snapshots/bilibili.json
+          BAK=/tmp/anime-snapshot.bak
+
+          item_count() {
+            node -e "try{const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));console.log(Array.isArray(j.items)?j.items.length:0)}catch{console.log(0)}" "$1"
+          }
+          age_days() {
+            node -e "try{const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));const t=new Date(j.fetchedAt).getTime();console.log(Number.isNaN(t)?9999:Math.floor((Date.now()-t)/86400000))}catch{console.log(9999)}" "$1"
+          }
+
+          # L1：先备份由 actions/cache 恢复回来的旧快照，供 L2 还原
+          if [ -f "$SNAP" ]; then
+            cp "$SNAP" "$BAK"
+            echo "cached snapshot: $(item_count "$SNAP") items, $(age_days "$SNAP") days old"
+          else
+            echo "no cached snapshot found; a full sync is required"
+          fi
+
+          # L6：快照未过期就跳过，避免每次部署（含每日 cron 与每次内容推送）都打 B 站 API
+          if [ -f "$SNAP" ] && [ "$(age_days "$SNAP")" -lt 7 ]; then
+            echo "::notice::anime snapshot is fresh (<7d); skipping sync"
+            exit 0
+          fi
+
+          sync_status=0
+          pnpm anime:sync --provider bilibili || sync_status=$?
+
+          # L2：空快照守卫。主题的 snapshot.keepLastValid 是**死键**（无任何消费者），
+          #     即 API 返回空列表时它拦不住覆盖，故在此手动兜底。
+          count=$(item_count "$SNAP")
+          if [ "$count" -eq 0 ] && [ -f "$BAK" ]; then
+            cp "$BAK" "$SNAP"
+            count=$(item_count "$SNAP")
+            echo "::warning::anime sync returned 0 items; restored previous snapshot (${count} items)"
+          fi
+
+          if [ "$count" -eq 0 ]; then
+            echo "::error::no anime data available (sync failed and no cached snapshot); /anime/ will render empty"
+            exit 1
+          fi
+
+          # L5：同步命令失败但尚有缓存快照 → 站点照常可用，本步标红以便在 Actions 里被发现
+          if [ "$sync_status" -ne 0 ]; then
+            echo "::warning::anime sync exited with ${sync_status}; serving cached snapshot (${count} items)"
+            exit 1
+          fi
+
+          echo "anime snapshot ready: ${count} items"
 
       - name: Build site
         run: pnpm build
