@@ -1,5 +1,9 @@
 ---
 import TagList from "@components/atoms/blog/TagList.astro";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import { getTagList } from "@utils/content-utils";
+import { getTagUrl, url } from "@utils/url-utils";
 /**
  * 标签侧栏组件（消费 blog/TagList 原子）。
  * 只负责取数转 props：标签名 + 标签 URL。
@@ -8,10 +12,6 @@ import TagList from "@components/atoms/blog/TagList.astro";
  */
 import { Icon } from "astro-icon/components";
 import type { TagsWidget } from "@/types/sidebarConfig";
-import I18nKey from "@i18n/i18nKey";
-import { i18n } from "@i18n/translation";
-import { getTagList } from "@utils/content-utils";
-import { getTagUrl, url } from "@utils/url-utils";
 import WidgetLayout from "./WidgetLayout.astro";
 
 const tags = await getTagList();
