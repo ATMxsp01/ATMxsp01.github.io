@@ -20,13 +20,13 @@ function parseBiliProgress(rawProgress) {
 	if (typeof rawProgress === "number" && Number.isFinite(rawProgress)) {
 		return Math.max(0, Math.floor(rawProgress));
 	}
-	if (typeof rawProgress === "string") {
+	if (typeof rawProgress === "string" && rawProgress.trim()) {
 		const match = rawProgress.match(/(\d+)/);
 		if (match) {
 			return Number.parseInt(match[1], 10) || 0;
 		}
 	}
-	return 0;
+	return undefined;
 }
 
 async function downloadCoverLocally(coverUrl, id) {
@@ -211,6 +211,7 @@ export async function fetchBilibiliData(bilibiliConfig) {
 			typeof item.total_count === "number" && item.total_count > 0
 				? item.total_count
 				: 0;
+		const progress = watched !== undefined ? { watched, total } : undefined;
 
 		// 封面处理
 		let cover = item.cover || "";
@@ -278,7 +279,7 @@ export async function fetchBilibiliData(bilibiliConfig) {
 			title,
 			status,
 			rating,
-			progress: { watched, total },
+			progress,
 			cover: cover || undefined,
 			link: link || undefined,
 			description: description || undefined,
