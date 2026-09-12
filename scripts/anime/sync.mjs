@@ -1,10 +1,3 @@
-import {
-	existsSync,
-	mkdirSync,
-	renameSync,
-	unlinkSync,
-	writeFileSync,
-} from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -18,6 +11,7 @@ import {
 import { loadEnvFile } from "./load-env.mjs";
 import { fetchBangumiData } from "./providers/bangumi.mjs";
 import { fetchBilibiliData } from "./providers/bilibili.mjs";
+import { commitSnapshot } from "./snapshot-store.mjs";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -43,7 +37,14 @@ function scanForSensitiveData(jsonString) {
 	}
 }
 
-async function syncProvider(providerName, targetDir) {
+/**
+ * 同步单个 provider 的数据到快照文件。
+ *
+ * 写入目标恒为 `<provider>.json`（基线语义：自定义 `source.file` 是使用者输入，永不触碰）。
+ * 抓取结果为空且 `keepLastValid` 开启时保留已有有效快照：打印警告后正常返回（不视为失败，
+ * 部署流水线无需因「有意保留旧档」而中断）。
+ */
+async function syncProvider(providerName, targetDir, keepLastValid) {
 	console.log("\n========================================");
 	console.log(`Starting sync for provider: ${providerName.toUpperCase()}`);
 	console.log("========================================");
@@ -93,29 +94,31 @@ async function syncProvider(providerName, targetDir) {
 	// 敏感凭据扫描
 	scanForSensitiveData(jsonContent);
 
-	// 确保目录存在
-	if (!existsSync(targetDir)) {
-		mkdirSync(targetDir, { recursive: true });
-	}
-
 	const targetFile = join(targetDir, `${providerName}.json`);
 	const tempFile = join(targetDir, `.temp-${providerName}-${Date.now()}.json`);
 
-	try {
-		// 原子写入：先写临时文件，校验成功后再替换正式快照
-		writeFileSync(tempFile, jsonContent, "utf-8");
-		renameSync(tempFile, targetFile);
-		console.log(
-			`[anime-sync] ✓ Successfully synced ${sortedItems.length} items to ${targetFile}`,
+	// 空结果不覆盖有效快照（snapshot.keepLastValid），其余情况原子写入
+	const outcome = commitSnapshot({
+		targetFile,
+		tempFile,
+		jsonContent,
+		itemCount: sortedItems.length,
+		keepLastValid,
+	});
+
+	if (outcome === "kept") {
+		console.warn(
+			`[anime-sync] ⚠ Provider "${providerName}" returned 0 items; ` +
+				`kept the last valid snapshot at ${targetFile} ` +
+				"(snapshot.keepLastValid = true). " +
+				'Set "snapshot.keepLastValid: false" to allow empty snapshots.',
 		);
-	} catch (err) {
-		if (existsSync(tempFile)) {
-			try {
-				unlinkSync(tempFile);
-			} catch {}
-		}
-		throw err;
+		return;
 	}
+
+	console.log(
+		`[anime-sync] ✓ Successfully synced ${sortedItems.length} items to ${targetFile}`,
+	);
 }
 
 function parseCliArgs() {
@@ -175,7 +178,7 @@ async function main() {
 	let hasError = false;
 	for (const p of providersToSync) {
 		try {
-			await syncProvider(p, targetDir);
+			await syncProvider(p, targetDir, resolved.snapshot.keepLastValid);
 		} catch (error) {
 			hasError = true;
 			console.error(
