@@ -1,0 +1,79 @@
+# 友链申请表单（discussion category form）
+#
+# 【机制】GitHub 会把本文件渲染成「New discussion」时出现的表单，用户填的字段
+#   会被转换成 markdown 写入讨论正文。文件位于仓库 → Discussions 所在仓。
+#
+# 【⚠️ 文件名不可随意改】必须**严格等于目标分类的 slug**。
+#   本文件名 friend-link-exchange-request ←→ 分类「Friend link exchange request」。
+#   分类在：https://github.com/ATMxsp01/ATMxsp01.github.io/discussions/categories/friend-link-exchange-request
+#   若日后重命名分类，slug 会变，**必须同步重命名本文件**，否则表单静默失效（退回普通发帖框）。
+#   查当前 slug：gh api graphql -f query='{ repository(owner:"ATMxsp01", name:"ATMxsp01.github.io")
+#     { discussionCategories(first:20){ nodes { name slug } } } }'
+#
+# 【为什么不用置顶帖】discussion category form 是 GitHub 原生能力，字段可强制必填，
+#   比「置顶一个格式说明帖 + 靠用户自觉对照」干净得多。
+#   官方文档：docs.github.com/en/discussions/managing-discussions-for-your-community/creating-discussion-category-forms
+#
+# 【顶层键只有三个】body（必填，至少含 1 个非 Markdown 字段）、labels、title。
+#   labels 里的 "friends" 已在仓库中创建（仅仓库设置层，不进 git）。若该标签被删除，
+#   GitHub 会静默忽略它，表单仍可用。
+#
+# 【不支持 polls】该分类必须是 Open-ended discussion，不能是 Poll。
+#
+# 【与上游的差异】本目录（.github/DISCUSSION_TEMPLATE/）上游并不存在，属纯新增，
+#   不会造成 merge 冲突；但与上游的 diff 因此从 2 处变为 3 处。
+
+title: "[友链申请] "
+labels: ["friends"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢交换友链。按下面几项填写后提交即可，我会尽快处理并在本帖回复。
+
+        不要求互加，但我会看一眼站点内容——有原创内容、近一年内更新过、内容合规的，基本都会通过。
+
+  - type: input
+    id: site-name
+    attributes:
+      label: 站点名
+      description: 显示在友链卡片标题上的名字
+      placeholder: 例如：某某的博客
+    validations:
+      required: true
+
+  - type: input
+    id: site-url
+    attributes:
+      label: 站点链接
+      description: 完整的 https 地址
+      placeholder: https://example.com
+    validations:
+      required: true
+
+  - type: input
+    id: avatar-url
+    attributes:
+      label: 头像图片直链
+      description: 以 .png / .jpg / .webp 结尾的图片地址。留空也可以——会自动用站点名首字母做文字头像，不会裂图。
+      placeholder: https://example.com/avatar.png
+    validations:
+      required: false
+
+  - type: textarea
+    id: site-description
+    attributes:
+      label: 一句话简介
+      description: 40 字以内，写清你站点主要写什么
+      placeholder: 例如：记录后端开发与读书笔记
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 确认
+      options:
+        - label: 我的站点有原创内容，且近一年内更新过
+          required: true
