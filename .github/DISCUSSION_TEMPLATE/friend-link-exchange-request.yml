@@ -58,7 +58,7 @@ body:
     id: avatar-url
     attributes:
       label: 头像图片直链
-      description: 以 .png / .jpg / .webp 结尾的图片地址。留空也可以——会自动用站点名首字母做文字头像，不会裂图。
+      description: 以 .png / .jpg / .webp 结尾的图片地址。留空时会自动使用站点名首字母做文字头像。
       placeholder: https://example.com/avatar.png
     validations:
       required: false
