@@ -50,7 +50,7 @@ let snapshot = $state<MusicSnapshot>({
 	playlist: options.playlist,
 	currentIndex: hasInitialTracks ? 0 : -1,
 	currentTrack: options.playlist[0] ?? null,
-	status: !hasInitialTracks && hasMeting ? "loading" : "idle",
+	status: "idle",
 	currentTime: 0,
 	duration: options.playlist[0]?.duration ?? 0,
 	volume: options.defaultVolume,
