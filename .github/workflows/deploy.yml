@@ -123,7 +123,6 @@ jobs:
         run: |
           set -uo pipefail
           SNAP=src/data/anime-snapshots/bilibili.json
-          BAK=/tmp/anime-snapshot.bak
 
           item_count() {
             node -e "try{const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));console.log(Array.isArray(j.items)?j.items.length:0)}catch{console.log(0)}" "$1"
@@ -132,17 +131,10 @@ jobs:
             node -e "try{const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));const t=new Date(j.fetchedAt).getTime();console.log(Number.isNaN(t)?9999:Math.floor((Date.now()-t)/86400000))}catch{console.log(9999)}" "$1"
           }
 
-          # L1：先备份由 actions/cache 恢复回来的旧快照，供 L2 还原
-          if [ -f "$SNAP" ]; then
-            cp "$SNAP" "$BAK"
-            echo "cached snapshot: $(item_count "$SNAP") items, $(age_days "$SNAP") days old"
-          else
-            echo "no cached snapshot found; a full sync is required"
-          fi
-
-          # L6：快照未过期就跳过，避免每次部署（含每日 cron 与每次内容推送）都打 B 站 API
-          # ⚠️ 必须同时要求 count > 0：空快照的 fetchedAt 是"刚刚"，若只看时间就会
-          #    把一次失败的空结果锁死 7 天（2026-09-12 首次真实运行踩到过）。
+          # 主题已原生实现 snapshot.keepLastValid（上游 fda24ab3）：抓取为空时保留上一个有效快照。
+          # ⚠️ 主题的 --if-stale 暂不可用（sync.mjs 漏 import existsSync 且新鲜度误读
+          #    envelope.fetchedAt，见上游 issue #73），新鲜度检查暂在本步骤手工完成：
+          #    <7d 且 count>0 即跳过，避免每次部署（含每日 cron 与内容推送）都打 B 站 API。
           if [ -f "$SNAP" ] && [ "$(age_days "$SNAP")" -lt 7 ] && [ "$(item_count "$SNAP")" -gt 0 ]; then
             echo "::notice::anime snapshot is fresh (<7d) and non-empty; skipping sync"
             exit 0
@@ -151,21 +143,13 @@ jobs:
           sync_status=0
           pnpm anime:sync --provider bilibili || sync_status=$?
 
-          # L2：空快照守卫。主题的 snapshot.keepLastValid 是**死键**（无任何消费者），
-          #     即 API 返回空列表时它拦不住覆盖，故在此手动兜底。
+          # 计数守卫：保持可见性（部署不阻断）；keepLastValid 已防止空结果覆盖有效快照。
           count=$(item_count "$SNAP")
-          if [ "$count" -eq 0 ] && [ -f "$BAK" ] && [ "$(item_count "$BAK")" -gt 0 ]; then
-            cp "$BAK" "$SNAP"
-            count=$(item_count "$SNAP")
-            echo "::warning::anime sync returned 0 items; restored previous snapshot (${count} items)"
-          fi
-
           if [ "$count" -eq 0 ]; then
-            echo "::error::no anime data available (sync failed and no cached snapshot); /anime/ will render empty"
+            echo "::error::no anime data available (sync produced an empty snapshot); /anime/ will render empty"
             exit 1
           fi
 
-          # L5：同步命令失败但尚有缓存快照 → 站点照常可用，本步标红以便在 Actions 里被发现
           if [ "$sync_status" -ne 0 ]; then
             echo "::warning::anime sync exited with ${sync_status}; serving cached snapshot (${count} items)"
             exit 1
