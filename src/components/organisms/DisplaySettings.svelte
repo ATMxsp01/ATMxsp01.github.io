@@ -238,7 +238,7 @@ const stylePreviews = $derived(
 );
 </script>
 
-<div id="display-setting" class="float-panel float-panel-closed absolute transition-all w-80 {className}">
+<div id="display-setting" class="float-panel float-panel-closed absolute transition-all w-80 max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain m3-scroll-contain {className}">
     <PanelStack>
         <!-- 段一：主题配色（色相 + 风格九宫格 + Color Spec） -->
         <div class="p-4 flex flex-col gap-3">
@@ -415,4 +415,19 @@ const stylePreviews = $derived(
             text-overflow: ellipsis
             white-space: nowrap
 
+    :global(#display-setting.m3-scroll-contain)
+        scrollbar-width: thin
+        scrollbar-color: var(--scrollbar-bg) transparent
+        -webkit-overflow-scrolling: touch
+        &::-webkit-scrollbar
+            width: 0.375rem
+        &::-webkit-scrollbar-track
+            background: transparent
+        &::-webkit-scrollbar-thumb
+            background: var(--scrollbar-bg)
+            border-radius: var(--shape-corner-full)
+            &:hover
+                background: var(--scrollbar-bg-hover)
+            &:active
+                background: var(--scrollbar-bg-active)
 </style>
