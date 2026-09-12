@@ -121,9 +121,30 @@ async function syncProvider(providerName, targetDir, keepLastValid) {
 	);
 }
 
+function isProviderConfigured(providerName) {
+	if (providerName === "bangumi") {
+		const bgmConfig = animeConfig.providers?.bangumi;
+		return Boolean(
+			bgmConfig?.enable &&
+				bgmConfig.userId &&
+				bgmConfig.userId !== "your-bangumi-id",
+		);
+	}
+	if (providerName === "bilibili") {
+		const biliConfig = animeConfig.providers?.bilibili;
+		return Boolean(
+			biliConfig?.enable &&
+				biliConfig.vmid &&
+				biliConfig.vmid !== "your-bilibili-vmid",
+		);
+	}
+	return false;
+}
+
 function parseCliArgs() {
 	const args = process.argv.slice(2);
 	let provider = null;
+	let ifStale = false;
 
 	for (let i = 0; i < args.length; i++) {
 		if (args[i] === "--provider" && args[i + 1]) {
@@ -131,15 +152,17 @@ function parseCliArgs() {
 			i++;
 		} else if (args[i].startsWith("--provider=")) {
 			provider = args[i].split("=")[1].toLowerCase();
+		} else if (args[i] === "--if-stale") {
+			ifStale = true;
 		}
 	}
 
-	return { provider };
+	return { provider, ifStale };
 }
 
 async function main() {
 	const resolved = resolveAnimeOptions(animeConfig);
-	const { provider: cliProvider } = parseCliArgs();
+	const { provider: cliProvider, ifStale } = parseCliArgs();
 
 	const targetDir = join(projectRoot, resolved.snapshot.directory);
 
@@ -149,19 +172,20 @@ async function main() {
 	} else if (cliProvider === "bangumi" || cliProvider === "bilibili") {
 		providersToSync = [cliProvider];
 	} else if (resolved.source.kind === "snapshot" && resolved.source.provider) {
-		providersToSync = [resolved.source.provider];
+		if (isProviderConfigured(resolved.source.provider)) {
+			providersToSync = [resolved.source.provider];
+		} else {
+			console.log(
+				`[anime-sync] Provider "${resolved.source.provider}" configured in source.provider is not fully enabled or has placeholder ID. Skipping sync.`,
+			);
+			process.exit(0);
+		}
 	} else {
 		// 默认检查哪些 provider 配置了有效 ID 并启用
-		if (
-			animeConfig.providers?.bangumi?.enable &&
-			animeConfig.providers?.bangumi?.userId
-		) {
+		if (isProviderConfigured("bangumi")) {
 			providersToSync.push("bangumi");
 		}
-		if (
-			animeConfig.providers?.bilibili?.enable &&
-			animeConfig.providers?.bilibili?.vmid
-		) {
+		if (isProviderConfigured("bilibili")) {
 			providersToSync.push("bilibili");
 		}
 		if (providersToSync.length === 0) {
@@ -170,6 +194,32 @@ async function main() {
 			);
 			console.log(
 				"Usage: node scripts/anime/sync.mjs --provider <bangumi|bilibili|all>",
+			);
+			process.exit(0);
+		}
+	}
+
+	if (ifStale) {
+		providersToSync = providersToSync.filter((p) => {
+			const snapshotFile = join(targetDir, `${p}.json`);
+			if (!existsSync(snapshotFile)) {
+				return true;
+			}
+			try {
+				const content = JSON.parse(readFileSync(snapshotFile, "utf8"));
+				if (!content.envelope?.fetchedAt) return true;
+				const fetchedTime = new Date(content.envelope.fetchedAt).getTime();
+				if (Number.isNaN(fetchedTime)) return true;
+				const ageDays = (Date.now() - fetchedTime) / (1000 * 60 * 60 * 24);
+				return ageDays >= resolved.snapshot.staleAfterDays;
+			} catch {
+				return true;
+			}
+		});
+
+		if (providersToSync.length === 0) {
+			console.log(
+				`[anime-sync] All active snapshots are fresh (< ${resolved.snapshot.staleAfterDays} days old). Skipping sync due to --if-stale.`,
 			);
 			process.exit(0);
 		}
