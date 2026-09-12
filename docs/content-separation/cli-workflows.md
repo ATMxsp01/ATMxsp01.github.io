@@ -99,10 +99,11 @@ pnpm content:export --yes --config  # 只回写配置
 3. **防止主题资源污染内容仓**：严格限定导出范围，仅处理属于用户内容的顶层目录。主题自带的系统资源（如网站图标 `public/favicon/`、主题字体 `src/assets/fonts/`）以及构建生成的搜索索引（`public/pagefind/`）绝不会被倒进内容仓。
 4. **永不导出的系统生成物**（内容仓若包含这些文件会导致同步报错）：
    - 说说缩略图：`public/assets/moments/thumbnails/**`
-   - 番剧封面与快照：`public/assets/anime/covers/**`、`src/data/anime-snapshots/**`
+   - 番剧封面：`public/assets/anime/covers/**`
    - 子集字体生成物：`src/assets/fonts/.subset/**`
-   - 目录占位文件 `.gitkeep` 以及清单中通过 `keep` 声明为代码仓自有的文件
-5. **跨平台换行符处理**：在 Windows 环境下比对文本前会自动消除换行符差异，并在写回内容仓时统一规范为 LF 换行，避免产生纯换行符的虚假 Git 改动。
+   - 清单中通过 `keep` 声明为代码仓自有的文件
+5. **番剧快照与 `.gitkeep` 永不导出（但同步方向允许提供）**：`src/data/anime-snapshots/**` 与各目录 `.gitkeep` 不属于「同步报错」的生成物。快照的语义是「基线（last-known-good）」：内容仓可以提供快照文件（含不调用任何外部 API 的纯静态 JSON 数据源 `source.file`），`anime:sync` 成功抓取后覆盖 `<provider>.json`（自定义 `source.file` 永不被写入）；导出侧对二者一律跳过，避免把基线与代码仓自有占位文件倒灌进内容仓。
+6. **跨平台换行符处理**：在 Windows 环境下比对文本前会自动消除换行符差异，并在写回内容仓时统一规范为 LF 换行，避免产生纯换行符的虚假 Git 改动。
 
 ### YAML 配置差分与写回规则
 
