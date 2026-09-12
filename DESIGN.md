@@ -340,7 +340,7 @@ components:
   menu:
     backgroundColor: "{colors.surface-container}"
     textColor: "{colors.on-surface}"
-    rounded: "{rounded.extra-small}"
+    rounded: "{rounded.large}"
     padding: "{spacing.compact}"
   snackbar:
     backgroundColor: "{colors.inverse-surface}"
