@@ -141,8 +141,10 @@ jobs:
           fi
 
           # L6：快照未过期就跳过，避免每次部署（含每日 cron 与每次内容推送）都打 B 站 API
-          if [ -f "$SNAP" ] && [ "$(age_days "$SNAP")" -lt 7 ]; then
-            echo "::notice::anime snapshot is fresh (<7d); skipping sync"
+          # ⚠️ 必须同时要求 count > 0：空快照的 fetchedAt 是"刚刚"，若只看时间就会
+          #    把一次失败的空结果锁死 7 天（2026-09-12 首次真实运行踩到过）。
+          if [ -f "$SNAP" ] && [ "$(age_days "$SNAP")" -lt 7 ] && [ "$(item_count "$SNAP")" -gt 0 ]; then
+            echo "::notice::anime snapshot is fresh (<7d) and non-empty; skipping sync"
             exit 0
           fi
 
@@ -152,7 +154,7 @@ jobs:
           # L2：空快照守卫。主题的 snapshot.keepLastValid 是**死键**（无任何消费者），
           #     即 API 返回空列表时它拦不住覆盖，故在此手动兜底。
           count=$(item_count "$SNAP")
-          if [ "$count" -eq 0 ] && [ -f "$BAK" ]; then
+          if [ "$count" -eq 0 ] && [ -f "$BAK" ] && [ "$(item_count "$BAK")" -gt 0 ]; then
             cp "$BAK" "$SNAP"
             count=$(item_count "$SNAP")
             echo "::warning::anime sync returned 0 items; restored previous snapshot (${count} items)"
