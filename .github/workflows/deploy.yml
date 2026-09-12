@@ -127,21 +127,14 @@ jobs:
           item_count() {
             node -e "try{const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));console.log(Array.isArray(j.items)?j.items.length:0)}catch{console.log(0)}" "$1"
           }
-          age_days() {
-            node -e "try{const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));const t=new Date(j.fetchedAt).getTime();console.log(Number.isNaN(t)?9999:Math.floor((Date.now()-t)/86400000))}catch{console.log(9999)}" "$1"
-          }
 
-          # 主题已原生实现 snapshot.keepLastValid（上游 fda24ab3）：抓取为空时保留上一个有效快照。
-          # ⚠️ 主题的 --if-stale 暂不可用（sync.mjs 漏 import existsSync 且新鲜度误读
-          #    envelope.fetchedAt，见上游 issue #73），新鲜度检查暂在本步骤手工完成：
-          #    <7d 且 count>0 即跳过，避免每次部署（含每日 cron 与内容推送）都打 B 站 API。
-          if [ -f "$SNAP" ] && [ "$(age_days "$SNAP")" -lt 7 ] && [ "$(item_count "$SNAP")" -gt 0 ]; then
-            echo "::notice::anime snapshot is fresh (<7d) and non-empty; skipping sync"
-            exit 0
-          fi
-
+          # 主题已原生支持（上游 #75 修复后可用）：
+          # - --if-stale：快照新鲜（< snapshot.staleAfterDays，内容仓 anime.yaml 设为 7 天）即跳过，
+          #   避免每次部署（含每日 cron 与内容推送）都打 B 站 API；
+          # - snapshot.keepLastValid：抓取为空时保留上一个有效快照。
+          # 本步保持 continue-on-error：番剧同步失败绝不阻断站点部署。
           sync_status=0
-          pnpm anime:sync --provider bilibili || sync_status=$?
+          pnpm anime:sync --provider bilibili --if-stale || sync_status=$?
 
           # 计数守卫：保持可见性（部署不阻断）；keepLastValid 已防止空结果覆盖有效快照。
           count=$(item_count "$SNAP")
