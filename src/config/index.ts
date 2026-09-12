@@ -40,6 +40,7 @@ export {
 } from "./fontConfig";
 export { footerConfig } from "./footerConfig";
 export { friendsConfig } from "./friendsConfig";
+export { i18nConfig } from "./i18nConfig";
 export {
 	imageBloomConfig,
 	resolveImageBloomOptions,
