@@ -1,4 +1,5 @@
 import type { AnimeItem } from "../data/anime.ts";
+import type { PageMeta } from "./pageMeta.ts";
 
 /**
  * 支持的番剧外部数据服务提供方
@@ -122,10 +123,9 @@ export interface AnimeSnapshotConfig {
 /**
  * 番剧模块全局完整配置契约
  */
-export interface AnimeConfig {
+export interface AnimeConfig extends PageMeta {
 	/**
-	 * 是否启用番剧页面。
-	 * 注：设置为 true 仅表示开启 `/anime/` 路由与本地数据渲染，不代表发起任何网络请求。
+	 * 是否启用番剧页面。关闭后隐藏导航入口并将 /anime/ 重定向到 404。
 	 */
 	enable: boolean;
 	/** 主数据源配置 */
