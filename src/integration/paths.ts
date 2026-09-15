@@ -44,7 +44,14 @@ export function detectPluginMode(fromUrl: string): boolean {
  * `src/config/data` and `src/content` — the layout `astro.config.mjs` and the
  * repo scripts have always assumed.
  */
-export function detectInRepoMode(projectRoot: string, packageRoot: string): boolean {
+export function detectInRepoMode(
+	projectRoot: string,
+	packageRoot: string,
+): boolean {
+	// `config.root` arrives as a `file:` URL *with* a trailing slash, so
+	// `fileURLToPath` yields `/path/to/repo/` while `findPackageRoot()` returns
+	// `/path/to/repo`. Strip the trailing separator before comparing, or every
+	// repository checkout is misdetected as package mode.
 	return (
 		normalisePath(projectRoot).toLowerCase() ===
 		normalisePath(packageRoot).toLowerCase()
@@ -112,5 +119,5 @@ export function resolvePaths(
 
 /** Normalise a filesystem path for comparison across platforms. */
 export function normalisePath(value: string): string {
-	return value.replace(/\\/g, "/");
+	return value.replace(/\\/g, "/").replace(/\/+$/, "");
 }
