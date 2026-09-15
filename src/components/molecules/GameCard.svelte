@@ -23,29 +23,35 @@ let { game, delay = 0 }: { game: GameItem; delay?: number } = $props();
 
 let coverFailed = $state(false);
 
+// 状态 pill 用 M3 的 tonal 配对（bg/fg 成对），保证文字对比度达标：
+// 叠在封面上时实底比"淡色底 + 状态色文字"更可靠，且各状态仍保有语义色。
 const statusMeta: Record<
 	GameStatus,
-	{ key: I18nKey; icon: string; color: string }
+	{ key: I18nKey; icon: string; bg: string; fg: string }
 > = {
 	playing: {
 		key: I18nKey.gamesStatusPlaying,
 		icon: "material-symbols:play-circle-outline-rounded",
-		color: "var(--primary)",
+		bg: "var(--primary)",
+		fg: "var(--on-primary)",
 	},
 	completed: {
 		key: I18nKey.gamesStatusCompleted,
 		icon: "material-symbols:trophy-outline-rounded",
-		color: "var(--tertiary)",
+		bg: "var(--tertiary)",
+		fg: "var(--on-tertiary)",
 	},
 	backlog: {
 		key: I18nKey.gamesStatusBacklog,
 		icon: "material-symbols:hourglass-empty-rounded",
-		color: "var(--on-surface-variant)",
+		bg: "var(--surface-container-highest)",
+		fg: "var(--on-surface-variant)",
 	},
 	wishlist: {
 		key: I18nKey.gamesStatusWishlist,
 		icon: "material-symbols:bookmark-outline-rounded",
-		color: "var(--secondary)",
+		bg: "var(--secondary)",
+		fg: "var(--on-secondary)",
 	},
 };
 
@@ -61,7 +67,7 @@ const ratingLabel = $derived(
 <article
 	class={`game-card ${showCover ? "game-card--with-cover" : "game-card--no-cover"} ${game.featured ? "game-card--featured" : ""}`}
 	data-game={game.id}
-	style={`--game-status-color: ${meta.color};`}
+	style={`--game-status-bg: ${meta.bg}; --game-status-fg: ${meta.fg};`}
 	use:reveal={{ delay }}
 >
 	<div class="game-card__banner">
@@ -270,6 +276,7 @@ const ratingLabel = $derived(
 			color: var(--tertiary)
 
 	/* 状态 pill：语义色来自 inline --game-status-color，实底托底保证压在图上可读 */
+	/* 状态 pill：bg/fg 为 M3 tonal 配对（inline 注入），叠在封面上仍达标 */
 	&__status
 		position: absolute
 		top: 0.625rem
@@ -280,11 +287,11 @@ const ratingLabel = $derived(
 		gap: 0.3125rem
 		padding: 0.125rem 0.5625rem
 		border-radius: var(--shape-corner-full)
-		background: unquote("color-mix(in oklab, var(--game-status-color) 22%, var(--surface-container-highest))")
-		color: var(--game-status-color)
+		background: var(--game-status-bg)
+		color: var(--game-status-fg)
 		font: var(--m3e-type-label-small)
 		font-weight: 600
-		border: 1px solid unquote("color-mix(in oklab, var(--game-status-color) 30%, transparent)")
+		border: 1px solid unquote("color-mix(in oklab, var(--game-status-fg) 24%, transparent)")
 		box-shadow: var(--m3e-elevation-1)
 
 		> :global(svg)
