@@ -43,6 +43,7 @@ export type SidebarPage =
 	| "about" // 关于
 	| "categories" // 分类索引
 	| "tags" // 标签索引
+	| "series" // 系列索引
 	| "rss" // RSS 订阅指南
 	| "atom" // Atom 订阅指南
 	| "post"; // 文章详情页

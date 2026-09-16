@@ -1,4 +1,4 @@
-﻿import { type CollectionEntry, getCollection } from "astro:content";
+import { type CollectionEntry, getCollection } from "astro:content";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import {
@@ -7,6 +7,10 @@ import {
 } from "@utils/content-date";
 import { siteMarkdownProcessor } from "@utils/markdown-processor";
 import { initPostIdMap } from "@utils/permalink-utils";
+import {
+	getSeriesCatalog,
+	resolveSeriesPostCategory,
+} from "@utils/series-utils";
 import { getCategoryUrl, getPostUrl, url } from "@utils/url-utils";
 
 // // Retrieve posts and sort them by publication date
@@ -17,6 +21,19 @@ async function getRawSortedPosts(): Promise<CollectionEntry<"posts">[]> {
 
 	for (const post of allBlogPosts) validatePublicationMetadata(post);
 	const sorted = allBlogPosts.sort(comparePublicationEntries);
+
+	// 系列默认分类（回退链）统一在这里落地：显示与聚合共用同一份「有效 category」
+	const seriesCatalog = await getSeriesCatalog();
+	for (const post of sorted) {
+		const seriesData = post.data.series
+			? seriesCatalog.get(post.data.series)?.data
+			: undefined;
+		post.data.category = resolveSeriesPostCategory(
+			post.data.category,
+			seriesData,
+		);
+	}
+
 	initPostIdMap(sorted);
 	return sorted;
 }
@@ -93,21 +110,29 @@ export async function getCategoryList(): Promise<Category[]> {
 	const allBlogPosts = await getCollection<"posts">("posts", ({ data }) => {
 		return import.meta.env.PROD ? data.draft !== true : true;
 	});
+	const seriesCatalog = await getSeriesCatalog();
 	const count: { [key: string]: number } = {};
-	allBlogPosts.forEach((post: { data: { category: string | null } }) => {
-		if (!post.data.category) {
-			const ucKey = i18n(I18nKey.uncategorized);
-			count[ucKey] = count[ucKey] ? count[ucKey] + 1 : 1;
-			return;
-		}
+	allBlogPosts.forEach(
+		(post: { data: { category: string | null; series?: string } }) => {
+			// 与 getRawSortedPosts 同一回退链（显式 category → 系列默认分类 → 未分类）
+			const seriesData = post.data.series
+				? seriesCatalog.get(post.data.series)?.data
+				: undefined;
+			const effectiveCategory = resolveSeriesPostCategory(
+				post.data.category,
+				seriesData,
+			);
+			if (!effectiveCategory) {
+				const ucKey = i18n(I18nKey.uncategorized);
+				count[ucKey] = count[ucKey] ? count[ucKey] + 1 : 1;
+				return;
+			}
 
-		const categoryName =
-			typeof post.data.category === "string"
-				? post.data.category.trim()
-				: String(post.data.category).trim();
+			const categoryName = effectiveCategory.trim();
 
-		count[categoryName] = count[categoryName] ? count[categoryName] + 1 : 1;
-	});
+			count[categoryName] = count[categoryName] ? count[categoryName] + 1 : 1;
+		},
+	);
 
 	const lst = Object.keys(count).sort((a, b) => {
 		return a.toLowerCase().localeCompare(b.toLowerCase());
