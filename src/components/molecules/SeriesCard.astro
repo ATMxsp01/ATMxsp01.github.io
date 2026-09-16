@@ -1,0 +1,169 @@
+---
+import Chip from "@components/atoms/action/Chip.astro";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import type { SeriesPostContext } from "@utils/series-utils";
+import { getPostUrlBySlug, getSeriesUrl } from "@utils/url-utils";
+import { Icon } from "astro-icon/components";
+
+interface Props {
+	context: SeriesPostContext;
+	class?: string;
+}
+
+const { context, class: className = "" } = Astro.props;
+const partMessage = i18n(I18nKey.seriesPart).split(/(\{index\}|\{total\})/g);
+const statusLabel =
+	context.status === "completed"
+		? i18n(I18nKey.seriesStatusCompleted)
+		: i18n(I18nKey.seriesStatusOngoing);
+---
+
+<div
+	class={`series-card${className ? ` ${className}` : ""}`}
+	data-series-card
+	data-series-slug={context.slug}
+	data-series-status={context.status}
+>
+	<div class="series-card__header">
+		<span class="series-card__icon" aria-hidden="true">
+			<Icon name="material-symbols:auto-stories-rounded" />
+		</span>
+		<div class="series-card__titles">
+			<span class="series-card__eyebrow">{i18n(I18nKey.seriesPartOf)}</span>
+			<a
+				class="series-card__name m3-state-layer"
+				href={getSeriesUrl(context.slug)}
+			>
+				{context.title}
+			</a>
+		</div>
+		<span class="series-card__status">{statusLabel}</span>
+	</div>
+
+	<p class="series-card__part">
+		{partMessage.map((part) => {
+			if (part === "{index}") {
+				return <span class="series-card__part-value">{context.index}</span>;
+			}
+			if (part === "{total}") {
+				return <span class="series-card__part-value">{context.total}</span>;
+			}
+			return part;
+		})}
+	</p>
+
+	{(context.prev || context.next) && (
+		<div class="series-card__nav">
+			{context.prev ? (
+				<Chip
+					href={getPostUrlBySlug(context.prev.slug)}
+					variant="tonal"
+					label={i18n(I18nKey.seriesPrevInSeries)}
+					class="series-card__chip"
+				>
+					<Icon name="material-symbols:chevron-left-rounded" />
+					<span class="series-card__chip-title">{context.prev.title}</span>
+				</Chip>
+			) : (
+				<span class="series-card__nav-spacer" aria-hidden="true"></span>
+			)}
+			{context.next ? (
+				<Chip
+					href={getPostUrlBySlug(context.next.slug)}
+					variant="tonal"
+					label={i18n(I18nKey.seriesNextInSeries)}
+					class="series-card__chip"
+				>
+					<span class="series-card__chip-title">{context.next.title}</span>
+					<Icon name="material-symbols:chevron-right-rounded" />
+				</Chip>
+			) : (
+				<span class="series-card__nav-spacer" aria-hidden="true"></span>
+			)}
+		</div>
+	)}
+</div>
+
+<style lang="stylus">
+.series-card
+	display: block
+	border-radius: var(--shape-corner-l)
+	background: var(--surface-container-low)
+	padding: var(--m3e-space-4)
+
+	&__header
+		display: flex
+		align-items: center
+		gap: var(--m3e-space-3)
+
+	&__icon
+		display: inline-flex
+		align-items: center
+		justify-content: center
+		width: 2.5rem
+		height: 2.5rem
+		border-radius: var(--shape-corner-m)
+		background: unquote("color-mix(in oklab, var(--primary) 12%, transparent)")
+		color: var(--primary)
+		font-size: 1.25rem
+		flex-shrink: 0
+
+	&__titles
+		display: flex
+		flex-direction: column
+		min-width: 0
+
+	&__eyebrow
+		font: var(--m3e-type-label-small)
+		color: var(--on-surface-variant)
+
+	&__name
+		font: var(--m3e-type-title-small)
+		font-weight: 600
+		color: var(--primary)
+		text-decoration: none
+		border-radius: var(--shape-corner-xs)
+		overflow: hidden
+		text-overflow: ellipsis
+		white-space: nowrap
+
+	&__status
+		margin-left: auto
+		flex-shrink: 0
+		display: inline-flex
+		align-items: center
+		padding: 0.125rem 0.625rem
+		border-radius: var(--shape-corner-full)
+		background: unquote("color-mix(in oklab, var(--primary) 10%, transparent)")
+		color: var(--primary)
+		font: var(--m3e-type-label-small)
+		font-weight: 600
+
+	&__part
+		margin: var(--m3e-space-2) 0 0
+		font: var(--m3e-type-body-small)
+		color: var(--on-surface-variant)
+
+	&__part-value
+		color: var(--on-surface)
+		font-weight: 600
+
+	&__nav
+		display: flex
+		gap: var(--m3e-space-2)
+		margin-top: var(--m3e-space-3)
+
+	&__chip
+		flex: 1
+		min-width: 0
+
+	&__chip-title
+		overflow: hidden
+		text-overflow: ellipsis
+		white-space: nowrap
+
+	&__nav-spacer
+		flex: 1
+		min-width: 0
+</style>
