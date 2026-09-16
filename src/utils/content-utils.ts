@@ -8,10 +8,24 @@ import {
 import { siteMarkdownProcessor } from "@utils/markdown-processor";
 import { initPostIdMap } from "@utils/permalink-utils";
 import {
-	getSeriesCatalog,
 	resolveSeriesPostCategory,
+	type SeriesEntity,
 } from "@utils/series-utils";
 import { getCategoryUrl, getPostUrl, url } from "@utils/url-utils";
+
+/**
+ * 加载系列实体目录（Astro 内容层会缓存集合加载，多次调用成本可忽略）。
+ * 放在 content-utils 而不是 series-utils，是为了让 series-utils 保持纯函数、
+ * 可在 node --test 下直接导入。
+ */
+export async function getSeriesCatalog(): Promise<Map<string, SeriesEntity>> {
+	const entries = await getCollection("series");
+	const catalog = new Map<string, SeriesEntity>();
+	for (const entry of entries) {
+		catalog.set(entry.id, entry);
+	}
+	return catalog;
+}
 
 // // Retrieve posts and sort them by publication date
 async function getRawSortedPosts(): Promise<CollectionEntry<"posts">[]> {

@@ -21,7 +21,7 @@ import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { discoverArticles } from "@utils/article-discovery";
 import { resolveAsset } from "@utils/asset-utils";
 import { getPublishedInstant, getUpdatedInstant } from "@utils/content-date";
-import { getSortedPosts, type PostForList } from "@utils/content-utils";
+import { getSeriesCatalog, getSortedPosts, type PostForList } from "@utils/content-utils";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
 import { getMarkdownStylesheetAssets } from "@utils/markdown-assets";
 import { getSourceMarkdownSyntaxSnapshot } from "@utils/markdown-source-syntaxes.mjs";
@@ -32,7 +32,6 @@ import {
 import { initPostIdMap } from "@utils/permalink-utils";
 import {
 	buildSeriesContexts,
-	getSeriesCatalog,
 	type SeriesPostContext,
 } from "@utils/series-utils";
 import {
@@ -50,6 +49,7 @@ import {
 	licenseConfig,
 	profileConfig,
 	resolveArticleDiscoveryOptions,
+	seriesConfig,
 	resolveArticleShareOptions,
 	resolveCommentOptions,
 	resolveLastUpdatedNoticeOptions,
@@ -136,6 +136,7 @@ export async function getStaticPaths() {
 }
 
 const { entry, discovery, series } = Astro.props;
+const seriesCardAtTop = seriesConfig.cardPosition !== "bottom";
 const isEncrypted = Boolean(
 	entry.data.password && entry.data.password.trim().length > 0,
 );
@@ -274,7 +275,7 @@ const jsonLd = {
 						category={entry.data.category}
 					></PostMetadata>
 				)}
-				{series && (
+				{series && seriesCardAtTop && (
 					<SeriesCard context={series} class="mb-5 onload-animation" />
 				)}
 				{!entry.data.image && <div class="border-[var(--outline-variant)] border-dashed border-b-[1px] mb-5"></div>}
@@ -334,6 +335,10 @@ const jsonLd = {
 				random={discovery.random}
 				class="onload-animation"
 			/>
+
+			{series && !seriesCardAtTop && (
+				<SeriesCard context={series} class="mb-6 onload-animation" />
+			)}
 
 		</Card>
     </div>

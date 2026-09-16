@@ -10,9 +10,13 @@ import PageHeader from "@components/atoms/display/PageHeader.astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
-import { getSortedPostsList } from "@utils/content-utils";
+import { seriesConfig } from "@/config";
+
+if (!seriesConfig.enable) {
+	return Astro.redirect("/404/");
+}
+import { getSeriesCatalog, getSortedPostsList } from "@utils/content-utils";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
-import { getSeriesCatalog } from "@utils/series-utils";
 import { getSeriesUrl } from "@utils/url-utils";
 
 interface SeriesIndexItem {

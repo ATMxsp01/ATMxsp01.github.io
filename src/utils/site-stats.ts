@@ -10,12 +10,15 @@ import {
 	getSortedPosts,
 	getTagList,
 } from "./content-utils";
+import { getSeriesCatalog } from "./content-utils";
 
 export interface SiteStats {
 	posts: number;
 	moments: number;
 	categories: number;
 	tags: number;
+	/** 系列实体数 */
+	series: number;
 	/** 全部文章 remark 字数之和 */
 	words: number;
 	/** 运行天数：以最早一篇文章的发布日为起点（无文章则 0） */
@@ -31,11 +34,12 @@ let cache: SiteStats | null = null;
 export async function getSiteStats(): Promise<SiteStats> {
 	if (cache) return cache;
 
-	const [posts, moments, categories, tags] = await Promise.all([
+	const [posts, moments, categories, tags, seriesCatalog] = await Promise.all([
 		getSortedPosts(),
 		getSortedMoments(),
 		getCategoryList(),
 		getTagList(),
+		getSeriesCatalog(),
 	]);
 
 	// 总字数、最早发布日与最近更新日来自同一批文章，一次遍历
@@ -58,6 +62,7 @@ export async function getSiteStats(): Promise<SiteStats> {
 		moments: moments.length,
 		categories: categories.length,
 		tags: tags.length,
+		series: seriesCatalog.size,
 		words,
 		days: Number.isFinite(earliest)
 			? Math.max(0, Math.floor((Date.now() - earliest) / DAY_MS))

@@ -1,0 +1,142 @@
+---
+import MetaIcon from "@components/atoms/display/MetaIcon.astro";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import { getSeriesCatalog, getSortedPostsList } from "@utils/content-utils";
+import { getSeriesUrl, url } from "@utils/url-utils";
+import { Icon } from "astro-icon/components";
+import type { SeriesWidget } from "@/types/sidebarConfig";
+import WidgetLayout from "./WidgetLayout.astro";
+
+/**
+ * 系列侧栏组件：系列名 + 文章计数（与 Categories widget 同一规格表语言）。
+ * 超过侧栏展示上限（collapseAfter）时只展示前 N 项，并在卡片底部提供
+ * 「查看全部系列」入口指向系列索引页（/series/）。
+ * 站点没有任何系列时不渲染整个组件（零额外负担）。
+ */
+interface Props {
+	class?: string;
+	style?: string;
+	widget?: SeriesWidget;
+}
+
+const className = Astro.props.class;
+const style = Astro.props.style;
+
+const DISPLAY_LIMIT = Math.max(1, Astro.props.widget?.collapseAfter ?? 5);
+
+const catalog = await getSeriesCatalog();
+const posts = await getSortedPostsList();
+
+const seriesItems = [...catalog.entries()]
+	.map(([slug, entity]) => {
+		const members = posts.filter((post) => post.data.series === slug);
+		const latest = members.reduce<Date | null>((acc, post) => {
+			const published = post.data.published;
+			return acc === null || published > acc ? published : acc;
+		}, null);
+		return {
+			slug,
+			title: entity.data.title,
+			count: members.length,
+			latest,
+		};
+	})
+	.sort(
+		(a, b) => (b.latest?.getTime() ?? 0) - (a.latest?.getTime() ?? 0),
+	);
+
+const visibleItems = seriesItems.slice(0, DISPLAY_LIMIT).map((item) => ({
+	title: item.title.trim(),
+	href: getSeriesUrl(item.slug),
+	count: item.count,
+}));
+const hasOverflow = seriesItems.length > DISPLAY_LIMIT;
+---
+
+{seriesItems.length > 0 && (
+	<WidgetLayout name={i18n(I18nKey.series)} id="series" class={className} style={style}>
+		<ul class="series-widget">
+			{visibleItems.map((item) => (
+				<li>
+					<a class="series-widget__row m3-state-layer" href={item.href}>
+						<MetaIcon icon="material-symbols:auto-stories-outline-rounded" />
+						<span class="series-widget__name">{item.title}</span>
+						<span class="series-widget__rule" aria-hidden="true"></span>
+						<span class="series-widget__count">{item.count}</span>
+					</a>
+				</li>
+			))}
+		</ul>
+		{hasOverflow && (
+			<div slot="footer" class="widget-index-link">
+				<a href={url("/series/")} class="m3-state-layer">
+					{i18n(I18nKey.seriesViewAll)}
+					<Icon name="material-symbols:chevron-right-rounded" />
+				</a>
+			</div>
+		)}
+	</WidgetLayout>
+)}
+
+<style lang="stylus">
+.series-widget
+	display: flex
+	flex-direction: column
+	gap: var(--m3e-space-1)
+	margin: 0
+	padding: 0 var(--m3e-space-2)
+	list-style: none
+
+	&__row
+		display: flex
+		align-items: center
+		gap: var(--m3e-space-2)
+		min-height: 2.75rem
+		padding: 0 var(--m3e-space-2)
+		border-radius: var(--shape-corner-m)
+		text-decoration: none
+		--m3e-state-color: var(--on-surface)
+
+	&__name
+		font: var(--m3e-type-body-medium)
+		font-weight: 500
+		color: var(--on-surface-variant)
+		white-space: nowrap
+		overflow: hidden
+		text-overflow: ellipsis
+
+	&__rule
+		flex: 1
+		align-self: flex-end
+		margin-bottom: 0.35em
+		min-width: 0.5rem
+		border-bottom: 2px dotted var(--outline-variant)
+
+	&__count
+		font: var(--m3e-type-label-small)
+		font-weight: 600
+		font-variant-numeric: tabular-nums
+		color: var(--on-surface-variant)
+
+.widget-index-link
+	padding: var(--m3e-space-2) var(--m3e-space-4) 0
+	> a
+		display: flex
+		align-items: center
+		justify-content: center
+		gap: var(--m3e-space-1)
+		width: 100%
+		min-height: 2.5rem
+		padding: 0 var(--m3e-space-2)
+		border-radius: var(--shape-corner-m)
+		color: var(--primary)
+		font: var(--m3e-type-label-large)
+		font-weight: 600
+		text-decoration: none
+		--m3e-state-color: var(--primary)
+		transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard)
+		> :global(svg)
+			width: 1.125rem
+			height: 1.125rem
+</style>

@@ -1,4 +1,4 @@
-import { type CollectionEntry, getCollection } from "astro:content";
+import type { CollectionEntry } from "astro:content";
 
 export type SeriesEntity = CollectionEntry<"series">;
 
@@ -32,18 +32,6 @@ export interface SeriesMemberInput {
 	/** 所属系列 slug（空 = 不属于任何系列） */
 	series?: string;
 	seriesOrder?: number;
-}
-
-/**
- * 加载系列实体目录（Astro 内容层会缓存集合加载，多次调用成本可忽略）。
- */
-export async function getSeriesCatalog(): Promise<Map<string, SeriesEntity>> {
-	const entries = await getCollection("series");
-	const catalog = new Map<string, SeriesEntity>();
-	for (const entry of entries) {
-		catalog.set(entry.id, entry);
-	}
-	return catalog;
 }
 
 /**
