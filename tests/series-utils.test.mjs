@@ -4,6 +4,7 @@ import {
 	buildSeriesContexts,
 	excerptFromMarkdown,
 	findUnknownSeriesSlugs,
+	normaliseSeriesSlug,
 	orderSeriesMembers,
 	resolveSeriesPostCategory,
 } from "../src/utils/series-utils.ts";
@@ -14,6 +15,24 @@ const member = (slug, published, seriesOrder) => ({
 	published: new Date(published),
 	series: "demo",
 	seriesOrder,
+});
+
+describe("normaliseSeriesSlug", () => {
+	it("去掉前后空白，空值归一为空串", () => {
+		assert.equal(normaliseSeriesSlug(" demo "), "demo");
+		assert.equal(normaliseSeriesSlug("demo"), "demo");
+		assert.equal(normaliseSeriesSlug(""), "");
+		assert.equal(normaliseSeriesSlug(undefined), "");
+		assert.equal(normaliseSeriesSlug(null), "");
+	});
+
+	it("带空白的引用仍能命中目录（与 schema trim 后的取值一致）", () => {
+		const catalog = new Map([["demo", { id: "demo", data: {} }]]);
+		assert.deepEqual(
+			findUnknownSeriesSlugs([{ slug: "p", series: " demo " }], catalog),
+			[],
+		);
+	});
 });
 
 describe("orderSeriesMembers", () => {
