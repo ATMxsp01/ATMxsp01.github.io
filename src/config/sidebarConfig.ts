@@ -53,10 +53,10 @@ export const sidebarConfig: SidebarConfig = withUserConfig("sidebar", {
 			],
 		},
 		{
-			type: "tags",
+			type: "series",
 			enable: true,
 			slot: "sticky",
-			collapseAfter: 6,
+			collapseAfter: 5,
 			pages: [
 				"home",
 				"archive",
@@ -75,10 +75,10 @@ export const sidebarConfig: SidebarConfig = withUserConfig("sidebar", {
 			],
 		},
 		{
-			type: "series",
+			type: "tags",
 			enable: true,
 			slot: "sticky",
-			collapseAfter: 5,
+			collapseAfter: 6,
 			pages: [
 				"home",
 				"archive",
