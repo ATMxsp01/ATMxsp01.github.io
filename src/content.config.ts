@@ -17,8 +17,12 @@ const postsCollection = defineCollection({
 		image: z.string().optional().default(""),
 		tags: z.array(z.string()).optional().default([]),
 		category: z.string().optional().nullable().default(""),
-		/** 所属系列 slug（空 = 不属于任何系列；单归属） */
-		series: z.string().optional().default(""),
+		/** 所属系列 slug（空 = 不属于任何系列；单归属；落库前统一 trim） */
+		series: z
+			.string()
+			.optional()
+			.default("")
+			.transform((value) => value.trim()),
 		/** 系列内顺序；缺省回退为按发布日期排 */
 		seriesOrder: z.number().int().optional(),
 		lang: z.string().optional().default(""),

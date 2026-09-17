@@ -9,6 +9,7 @@ import { siteMarkdownProcessor } from "@utils/markdown-processor";
 import { initPostIdMap } from "@utils/permalink-utils";
 import {
 	findUnknownSeriesSlugs,
+	normaliseSeriesSlug,
 	resolveSeriesPostCategory,
 	type SeriesEntity,
 } from "@utils/series-utils";
@@ -40,11 +41,14 @@ async function getRawSortedPosts(): Promise<CollectionEntry<"posts">[]> {
 	for (const post of allBlogPosts) validatePublicationMetadata(post);
 	const sorted = allBlogPosts.sort(comparePublicationEntries);
 
-	// 系列默认分类（回退链）统一在这里落地：显示与聚合共用同一份「有效 category」
+	// 系列默认分类（回退链）统一在这里落地：显示与聚合共用同一份「有效 category」。
+	// 这里对集合条目 data 的写入是有意为之且幂等的（写入的即解析结果本身，
+	// 二次解析不变），因此 permalink 的 %category%、PostMeta 与聚合计数保持一致。
 	const seriesCatalog = await getSeriesCatalog();
 	for (const post of sorted) {
-		const seriesData = post.data.series
-			? seriesCatalog.get(post.data.series)?.data
+		const seriesSlug = normaliseSeriesSlug(post.data.series);
+		const seriesData = seriesSlug
+			? seriesCatalog.get(seriesSlug)?.data
 			: undefined;
 		post.data.category = resolveSeriesPostCategory(
 			post.data.category,
@@ -146,8 +150,9 @@ export async function getCategoryList(): Promise<Category[]> {
 	allBlogPosts.forEach(
 		(post: { data: { category: string | null; series?: string } }) => {
 			// 与 getRawSortedPosts 同一回退链（显式 category → 系列默认分类 → 未分类）
-			const seriesData = post.data.series
-				? seriesCatalog.get(post.data.series)?.data
+			const seriesSlug = normaliseSeriesSlug(post.data.series);
+			const seriesData = seriesSlug
+				? seriesCatalog.get(seriesSlug)?.data
 				: undefined;
 			const effectiveCategory = resolveSeriesPostCategory(
 				post.data.category,

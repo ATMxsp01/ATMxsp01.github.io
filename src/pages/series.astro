@@ -19,7 +19,7 @@ if (!seriesConfig.enable) {
 import { getSeriesCatalog, getSortedPostsList } from "@utils/content-utils";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
 import { resolveI18nText } from "@utils/i18n-utils";
-import { excerptFromMarkdown } from "@utils/series-utils";
+import { excerptFromMarkdown, normaliseSeriesSlug } from "@utils/series-utils";
 import { getSeriesUrl } from "@utils/url-utils";
 
 interface SeriesIndexItem {
@@ -39,7 +39,9 @@ const posts = await getSortedPostsList();
 
 const items: SeriesIndexItem[] = [];
 for (const [slug, entity] of catalog) {
-	const members = posts.filter((post) => post.data.series === slug);
+	const members = posts.filter(
+		(post) => normaliseSeriesSlug(post.data.series) === slug,
+	);
 	const latest = members.reduce<Date | null>((acc, post) => {
 		const published = post.data.published;
 		return acc === null || published > acc ? published : acc;

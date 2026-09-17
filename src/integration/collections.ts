@@ -53,7 +53,11 @@ export const postSchema = z.object({
 	tags: z.array(z.string()).optional().default([]),
 	category: z.string().optional().nullable().default(""),
 	/** Series slug the post belongs to (empty = none; single series per post). */
-	series: z.string().optional().default(""),
+	series: z
+		.string()
+		.optional()
+		.default("")
+		.transform((value) => value.trim()),
 	/** Position inside the series; falls back to publication order when absent. */
 	seriesOrder: z.number().int().optional(),
 	lang: z.string().optional().default(""),

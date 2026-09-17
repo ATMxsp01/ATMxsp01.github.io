@@ -2,6 +2,16 @@ import type { CollectionEntry } from "astro:content";
 
 export type SeriesEntity = CollectionEntry<"series">;
 
+/**
+ * 系列 slug 的唯一规范化点：schema 落在 `post.data.series` 上的是 trim 后的值，
+ * 组件/工具再做比较时也走这里，避免「卡片显示正常但计数/分类回退失效」。
+ * 另：系列实体必须平铺在 `content/series/` 根下，slug 即单个路由段，
+ * 不使用 `a/b` 形式的嵌套目录。
+ */
+export function normaliseSeriesSlug(raw: string | null | undefined): string {
+	return (raw ?? "").trim();
+}
+
 export interface SeriesPostRef {
 	slug: string;
 	title: string;
@@ -68,7 +78,7 @@ export function findUnknownSeriesSlugs(
 ): UnknownSeriesReference[] {
 	const firstSeen = new Map<string, string>();
 	for (const post of posts) {
-		const seriesSlug = post.series?.trim();
+		const seriesSlug = normaliseSeriesSlug(post.series);
 		if (!seriesSlug || catalog.has(seriesSlug)) continue;
 		if (!firstSeen.has(seriesSlug)) {
 			firstSeen.set(seriesSlug, post.slug);
@@ -138,7 +148,7 @@ export function buildSeriesContexts(
 
 	const groups = new Map<string, SeriesMemberInput[]>();
 	for (const post of posts) {
-		const seriesSlug = post.series?.trim();
+		const seriesSlug = normaliseSeriesSlug(post.series);
 		if (!seriesSlug || !catalog.has(seriesSlug)) continue;
 		const group = groups.get(seriesSlug) ?? [];
 		group.push(post);
