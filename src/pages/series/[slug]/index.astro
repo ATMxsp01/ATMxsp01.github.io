@@ -118,8 +118,6 @@ const subtitle = `${statusLabel} · ${ordered.length} ${i18n(I18nKey.postsCount)
 </MainGridLayout>
 
 <style lang="stylus">
-@import "../../../styles/breakpoints.styl"
-
 .series-detail
 	display: block
 
@@ -129,10 +127,12 @@ const subtitle = `${statusLabel} · ${ordered.length} ${i18n(I18nKey.postsCount)
 		border-radius: var(--shape-corner-m)
 		background: var(--surface-container-low)
 
+	/* 单列：两列时每行只有 ~280px（桌面侧栏占据后卡片仅 ~640px），
+	   标题会被压到 110px 左右并截断，点线引导也退化成最小值 */
 	&__list
-		display: grid
-		grid-template-columns: repeat(2, minmax(0, 1fr))
-		gap: var(--m3e-space-2) var(--m3e-space-4)
+		display: flex
+		flex-direction: column
+		gap: var(--m3e-space-2)
 		margin: var(--m3e-space-4) 0 0
 		padding: 0
 		list-style: none
@@ -170,15 +170,17 @@ const subtitle = `${statusLabel} · ${ordered.length} ${i18n(I18nKey.postsCount)
 		font: var(--m3e-type-body-large)
 		font-weight: 500
 		color: var(--on-surface)
+		flex: 0 1 auto
+		min-width: 0
 		white-space: nowrap
 		overflow: hidden
 		text-overflow: ellipsis
 
 	&__rule
-		flex: 1
+		flex: 1 1 0
 		align-self: flex-end
 		margin-bottom: 0.35em
-		min-width: 0.75rem
+		min-width: var(--m3e-space-4)
 		border-bottom: 2px dotted var(--outline-variant)
 
 	&__date
@@ -193,8 +195,4 @@ const subtitle = `${statusLabel} · ${ordered.length} ${i18n(I18nKey.postsCount)
 		min-height: 11rem
 		color: var(--on-surface-variant)
 		font: var(--m3e-type-body-large)
-
-	@media (max-width: bp-sm - 1px)
-		&__list
-			grid-template-columns: 1fr
 </style>

@@ -161,18 +161,25 @@ const pageDescription = seriesConfig.description
 		overflow: hidden
 		text-overflow: ellipsis
 
+	/* 状态 pill：M3 tonal 配对（与文章内系列卡同一套状态语言） */
 	&__status
 		margin-left: auto
 		flex-shrink: 0
 		display: inline-flex
 		align-items: center
-		padding: 0.125rem 0.625rem
+		padding: 0.125rem var(--m3e-space-2)
 		border-radius: var(--shape-corner-full)
-		background: unquote("color-mix(in oklab, var(--primary) 10%, transparent)")
-		color: var(--primary)
 		font: var(--m3e-type-label-small)
 		font-weight: 600
 		white-space: nowrap
+
+		&[data-series-status="ongoing"]
+			background: var(--primary-container)
+			color: var(--on-primary-container)
+
+		&[data-series-status="completed"]
+			background: var(--surface-container-highest)
+			color: var(--on-surface-variant)
 
 	&__meta
 		display: flex
