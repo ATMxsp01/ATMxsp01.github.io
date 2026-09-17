@@ -59,7 +59,7 @@ const statusLabel =
 				<Chip
 					href={getPostUrlBySlug(context.prev.slug)}
 					variant="tonal"
-					label={i18n(I18nKey.seriesPrevInSeries)}
+					label={`${i18n(I18nKey.seriesPrevInSeries)}: ${context.prev.title}`}
 					class="series-card__chip"
 				>
 					<Icon name="material-symbols:chevron-left-rounded" />
@@ -72,7 +72,7 @@ const statusLabel =
 				<Chip
 					href={getPostUrlBySlug(context.next.slug)}
 					variant="tonal"
-					label={i18n(I18nKey.seriesNextInSeries)}
+					label={`${i18n(I18nKey.seriesNextInSeries)}: ${context.next.title}`}
 					class="series-card__chip"
 				>
 					<span class="series-card__chip-title">{context.next.title}</span>
