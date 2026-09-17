@@ -17,6 +17,7 @@ if (!seriesConfig.enable) {
 }
 import { getSeriesCatalog, getSortedPostsList } from "@utils/content-utils";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
+import { resolveI18nText } from "@utils/i18n-utils";
 import { excerptFromMarkdown } from "@utils/series-utils";
 import { getSeriesUrl } from "@utils/url-utils";
 
@@ -58,13 +59,18 @@ items.sort(
 
 const totalPosts = items.reduce((sum, item) => sum + item.count, 0);
 const seriesSummary = `${items.length} ${i18n(items.length === 1 ? I18nKey.seriesCount : I18nKey.seriesCounts)} · ${totalPosts} ${i18n(I18nKey.postsCount)}`;
+const pageTitle = resolveI18nText(seriesConfig.title, I18nKey.series);
+// 描述：未配置时退回动态汇总；配置了（$t: 或字面量）则整体替换
+const pageDescription = seriesConfig.description
+	? resolveI18nText(seriesConfig.description)
+	: seriesSummary;
 ---
 
-<MainGridLayout title={i18n(I18nKey.series)} description={seriesSummary} page="series">
+<MainGridLayout title={pageTitle} description={pageDescription} page="series">
 	<Card color="var(--card-bg)" radius="l" class="series-index px-8 py-6">
 		<PageHeader
 			icon="material-symbols:auto-stories-rounded"
-			title={i18n(I18nKey.series)}
+			title={pageTitle}
 			subtitle={seriesSummary}
 		/>
 		{items.length > 0 && (
