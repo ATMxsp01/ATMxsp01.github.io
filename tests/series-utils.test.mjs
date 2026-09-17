@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
 	buildSeriesContexts,
 	excerptFromMarkdown,
+	findUnknownSeriesSlugs,
 	orderSeriesMembers,
 	resolveSeriesPostCategory,
 } from "../src/utils/series-utils.ts";
@@ -187,5 +188,36 @@ describe("excerptFromMarkdown", () => {
 
 	it("短文本原样返回且无省略号", () => {
 		assert.equal(excerptFromMarkdown("很短的总览"), "很短的总览");
+	});
+});
+
+describe("findUnknownSeriesSlugs", () => {
+	const catalog = new Map([["known", {}]]);
+
+	it("收集未知引用，每个 slug 只报首篇", () => {
+		const refs = findUnknownSeriesSlugs(
+			[
+				{ slug: "a", series: "ghost" },
+				{ slug: "b", series: "ghost" },
+				{ slug: "c", series: "known" },
+				{ slug: "d" },
+			],
+			catalog,
+		);
+		assert.deepEqual(refs, [{ slug: "ghost", postSlug: "a" }]);
+	});
+
+	it("全部合法时返回空", () => {
+		assert.deepEqual(
+			findUnknownSeriesSlugs(
+				[
+					{ slug: "a", series: "known" },
+					{ slug: "b", series: "" },
+					{ slug: "c" },
+				],
+				catalog,
+			),
+			[],
+		);
 	});
 });

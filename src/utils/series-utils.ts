@@ -51,6 +51,35 @@ export function excerptFromMarkdown(markdown: string, maxChars = 160): string {
 	return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
 }
 
+export interface UnknownSeriesReference {
+	/** 被引用但目录里不存在的系列 slug */
+	slug: string;
+	/** 第一个引用它的文章 slug（用于报错定位） */
+	postSlug: string;
+}
+
+/**
+ * 收集「文章引用了目录中不存在的系列」的引用（每个未知 slug 取首篇）。
+ * 纯函数：调用方（数据层）决定如何提示；行为上这些引用会被静默忽略。
+ */
+export function findUnknownSeriesSlugs(
+	posts: readonly { slug: string; series?: string }[],
+	catalog: ReadonlyMap<string, unknown>,
+): UnknownSeriesReference[] {
+	const firstSeen = new Map<string, string>();
+	for (const post of posts) {
+		const seriesSlug = post.series?.trim();
+		if (!seriesSlug || catalog.has(seriesSlug)) continue;
+		if (!firstSeen.has(seriesSlug)) {
+			firstSeen.set(seriesSlug, post.slug);
+		}
+	}
+	return [...firstSeen.entries()].map(([slug, postSlug]) => ({
+		slug,
+		postSlug,
+	}));
+}
+
 export interface SeriesMemberInput {
 	slug: string;
 	title: string;

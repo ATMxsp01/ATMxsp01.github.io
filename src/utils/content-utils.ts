@@ -8,6 +8,7 @@ import {
 import { siteMarkdownProcessor } from "@utils/markdown-processor";
 import { initPostIdMap } from "@utils/permalink-utils";
 import {
+	findUnknownSeriesSlugs,
 	resolveSeriesPostCategory,
 	type SeriesEntity,
 } from "@utils/series-utils";
@@ -26,6 +27,9 @@ export async function getSeriesCatalog(): Promise<Map<string, SeriesEntity>> {
 	}
 	return catalog;
 }
+
+/** 已警告过的未知系列 slug：同一笔误在整次构建只提示一次 */
+const warnedUnknownSeries = new Set<string>();
 
 // // Retrieve posts and sort them by publication date
 async function getRawSortedPosts(): Promise<CollectionEntry<"posts">[]> {
@@ -46,6 +50,19 @@ async function getRawSortedPosts(): Promise<CollectionEntry<"posts">[]> {
 			post.data.category,
 			seriesData,
 		);
+	}
+
+	// 引用未知系列的笔误：宽容忽略，但给出一次性构建期警告（dev/build 日志可见）
+	for (const ref of findUnknownSeriesSlugs(
+		sorted.map((post) => ({ slug: post.id, series: post.data.series })),
+		seriesCatalog,
+	)) {
+		if (!warnedUnknownSeries.has(ref.slug)) {
+			warnedUnknownSeries.add(ref.slug);
+			console.warn(
+				`[series] post "${ref.postSlug}" references unknown series "${ref.slug}" — series card and default-category fallback are skipped`,
+			);
+		}
 	}
 
 	initPostIdMap(sorted);
