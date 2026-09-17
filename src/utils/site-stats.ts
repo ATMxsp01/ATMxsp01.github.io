@@ -4,6 +4,7 @@
  * 文章跑 render 提取 remark 字数，不做缓存会逐页重复开销）。
  */
 import { render } from "astro:content";
+import { seriesConfig } from "../config/seriesConfig.ts";
 import {
 	getCategoryList,
 	getSeriesCatalog,
@@ -39,7 +40,8 @@ export async function getSiteStats(): Promise<SiteStats> {
 		getSortedMoments(),
 		getCategoryList(),
 		getTagList(),
-		getSeriesCatalog(),
+		// 功能关闭时不查集合（SiteStats 也不产出系列行）
+		seriesConfig.enable ? getSeriesCatalog() : Promise.resolve(null),
 	]);
 
 	// 总字数、最早发布日与最近更新日来自同一批文章，一次遍历
@@ -62,7 +64,8 @@ export async function getSiteStats(): Promise<SiteStats> {
 		moments: moments.length,
 		categories: categories.length,
 		tags: tags.length,
-		series: seriesCatalog.size,
+		/** 系列实体数（功能关闭时为 0，SiteStats 不产出该行） */
+		series: seriesCatalog?.size ?? 0,
 		words,
 		days: Number.isFinite(earliest)
 			? Math.max(0, Math.floor((Date.now() - earliest) / DAY_MS))
