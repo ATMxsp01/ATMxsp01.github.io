@@ -15,6 +15,7 @@ import { seriesConfig } from "@/config";
 if (!seriesConfig.enable) {
 	return Astro.redirect("/404/");
 }
+
 import { getSeriesCatalog, getSortedPostsList } from "@utils/content-utils";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
 import { resolveI18nText } from "@utils/i18n-utils";
@@ -53,9 +54,7 @@ for (const [slug, entity] of catalog) {
 		overview: excerptFromMarkdown(entity.body ?? ""),
 	});
 }
-items.sort(
-	(a, b) => (b.latest?.getTime() ?? 0) - (a.latest?.getTime() ?? 0),
-);
+items.sort((a, b) => (b.latest?.getTime() ?? 0) - (a.latest?.getTime() ?? 0));
 
 const totalPosts = items.reduce((sum, item) => sum + item.count, 0);
 const seriesSummary = `${items.length} ${i18n(items.length === 1 ? I18nKey.seriesCount : I18nKey.seriesCounts)} · ${totalPosts} ${i18n(I18nKey.postsCount)}`;

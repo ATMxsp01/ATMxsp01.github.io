@@ -43,9 +43,7 @@ const seriesItems = [...catalog.entries()]
 			latest,
 		};
 	})
-	.sort(
-		(a, b) => (b.latest?.getTime() ?? 0) - (a.latest?.getTime() ?? 0),
-	);
+	.sort((a, b) => (b.latest?.getTime() ?? 0) - (a.latest?.getTime() ?? 0));
 
 const visibleItems = seriesItems.slice(0, DISPLAY_LIMIT).map((item) => ({
 	name: item.title.trim(),

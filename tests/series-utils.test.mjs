@@ -93,14 +93,36 @@ describe("buildSeriesContexts", () => {
 	const catalog = new Map();
 	catalog.set("demo", {
 		id: "demo",
-		data: { title: "Demo Series", status: "ongoing", defaultCategory: "研究笔记" },
+		data: {
+			title: "Demo Series",
+			status: "ongoing",
+			defaultCategory: "研究笔记",
+		},
 	});
 
 	it("按阅读顺序给出 index/total 与组内上一篇/下一篇", () => {
 		const posts = [
-			{ slug: "p1", title: "P1", published: new Date("2026-01-03"), series: "demo", seriesOrder: 1 },
-			{ slug: "p2", title: "P2", published: new Date("2026-01-01"), series: "demo", seriesOrder: 2 },
-			{ slug: "p3", title: "P3", published: new Date("2026-01-02"), series: "demo", seriesOrder: 3 },
+			{
+				slug: "p1",
+				title: "P1",
+				published: new Date("2026-01-03"),
+				series: "demo",
+				seriesOrder: 1,
+			},
+			{
+				slug: "p2",
+				title: "P2",
+				published: new Date("2026-01-01"),
+				series: "demo",
+				seriesOrder: 2,
+			},
+			{
+				slug: "p3",
+				title: "P3",
+				published: new Date("2026-01-02"),
+				series: "demo",
+				seriesOrder: 3,
+			},
 			{ slug: "solo", title: "Solo", published: new Date("2026-01-04") },
 		];
 		const contexts = buildSeriesContexts({ catalog, posts });
@@ -120,7 +142,13 @@ describe("buildSeriesContexts", () => {
 
 	it("引用目录中不存在的系列时不生成上下文（不产生死链）", () => {
 		const posts = [
-			{ slug: "ghost", title: "Ghost", published: new Date("2026-01-01"), series: "no-such-series", seriesOrder: 1 },
+			{
+				slug: "ghost",
+				title: "Ghost",
+				published: new Date("2026-01-01"),
+				series: "no-such-series",
+				seriesOrder: 1,
+			},
 		];
 		const contexts = buildSeriesContexts({ catalog, posts });
 		assert.equal(contexts.size, 0);
@@ -138,10 +166,7 @@ describe("excerptFromMarkdown", () => {
 			"1. 第二点",
 			"> 引用一句",
 		].join("\n");
-		assert.equal(
-			excerptFromMarkdown(md),
-			"动机 第一点 第二点 引用一句",
-		);
+		assert.equal(excerptFromMarkdown(md), "动机 第一点 第二点 引用一句");
 	});
 
 	it("链接保留锚文本，图片与 HTML 标签移除", () => {

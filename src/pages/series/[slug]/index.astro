@@ -16,6 +16,7 @@ import { seriesConfig } from "@/config";
 if (!seriesConfig.enable) {
 	return Astro.redirect("/404/");
 }
+
 import { getSeriesCatalog, getSortedPostsList } from "@utils/content-utils";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
 import { getMarkdownStylesheetAssets } from "@utils/markdown-assets";

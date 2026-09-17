@@ -6,11 +6,11 @@
 import { render } from "astro:content";
 import {
 	getCategoryList,
+	getSeriesCatalog,
 	getSortedMoments,
 	getSortedPosts,
 	getTagList,
 } from "./content-utils";
-import { getSeriesCatalog } from "./content-utils";
 
 export interface SiteStats {
 	posts: number;

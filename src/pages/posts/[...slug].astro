@@ -21,7 +21,11 @@ import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { discoverArticles } from "@utils/article-discovery";
 import { resolveAsset } from "@utils/asset-utils";
 import { getPublishedInstant, getUpdatedInstant } from "@utils/content-date";
-import { getSeriesCatalog, getSortedPosts, type PostForList } from "@utils/content-utils";
+import {
+	getSeriesCatalog,
+	getSortedPosts,
+	type PostForList,
+} from "@utils/content-utils";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
 import { getMarkdownStylesheetAssets } from "@utils/markdown-assets";
 import { getSourceMarkdownSyntaxSnapshot } from "@utils/markdown-source-syntaxes.mjs";
@@ -49,11 +53,11 @@ import {
 	licenseConfig,
 	profileConfig,
 	resolveArticleDiscoveryOptions,
-	seriesConfig,
 	resolveArticleShareOptions,
 	resolveCommentOptions,
 	resolveLastUpdatedNoticeOptions,
 	resolveUmamiOptions,
+	seriesConfig,
 	siteConfig,
 	umamiConfig,
 } from "@/config";
