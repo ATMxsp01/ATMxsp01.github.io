@@ -1,8 +1,8 @@
 ---
 /**
- * 系列索引页：全部系列的总览入口。
- * 纯 SSR 直出：每行 = 系列图标 + 名称 + 状态徽标（连载中/已完结）+ 点线引导 +
- * 最近更新日期 + 文章计数；行点击进入系列页（/series/<slug>/）。
+ * 系列索引页：全部系列的总览入口。系列是文章之上的概念，
+ * 每个系列一张通栏大卡片：图标 + 名称 + 状态徽标 + 篇数/最近更新/默认分类 +
+ * 总览摘要；整卡点击进入系列页（/series/<slug>/）。
  */
 import Card from "@components/atoms/display/Card.svelte";
 import MetaIcon from "@components/atoms/display/MetaIcon.astro";
@@ -17,6 +17,7 @@ if (!seriesConfig.enable) {
 }
 import { getSeriesCatalog, getSortedPostsList } from "@utils/content-utils";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
+import { excerptFromMarkdown } from "@utils/series-utils";
 import { getSeriesUrl } from "@utils/url-utils";
 
 interface SeriesIndexItem {
@@ -25,6 +26,10 @@ interface SeriesIndexItem {
 	status: "ongoing" | "completed";
 	count: number;
 	latest: Date | null;
+	/** 系列默认分类（可空） */
+	category: string;
+	/** 总览摘要（可空 = 系列未写总览） */
+	overview: string;
 }
 
 const catalog = await getSeriesCatalog();
@@ -43,6 +48,8 @@ for (const [slug, entity] of catalog) {
 		status: entity.data.status,
 		count: members.length,
 		latest,
+		category: entity.data.defaultCategory.trim(),
+		overview: excerptFromMarkdown(entity.body ?? ""),
 	});
 }
 items.sort(
@@ -61,15 +68,15 @@ const seriesSummary = `${items.length} ${i18n(items.length === 1 ? I18nKey.serie
 			subtitle={seriesSummary}
 		/>
 		{items.length > 0 && (
-			<ul class="series-index__list">
+			<div class="series-index__list">
 				{items.map((item) => (
-					<li>
-						<a
-							class="series-index__row m3-state-layer"
-							href={getSeriesUrl(item.slug)}
-						>
-							<MetaIcon icon="material-symbols:auto-stories-rounded" />
-							<span class="series-index__name">{item.title}</span>
+					<a
+						class="series-index__card m3-state-layer"
+						href={getSeriesUrl(item.slug)}
+					>
+						<div class="series-index__head">
+							<MetaIcon icon="material-symbols:auto-stories-outline-rounded" />
+							<span class="series-index__title">{item.title}</span>
 							<span
 								class="series-index__status"
 								data-series-status={item.status}
@@ -78,17 +85,29 @@ const seriesSummary = `${items.length} ${i18n(items.length === 1 ? I18nKey.serie
 									? i18n(I18nKey.seriesStatusCompleted)
 									: i18n(I18nKey.seriesStatusOngoing)}
 							</span>
-							<span class="series-index__rule" aria-hidden="true"></span>
+						</div>
+						<div class="series-index__meta">
+							<span>
+								{item.count} {i18n(I18nKey.postsCount)}
+							</span>
 							{item.latest && (
-								<span class="series-index__date">
+								<span>
+									{i18n(I18nKey.statsUpdated)}{" "}
 									{formatDateToYYYYMMDD(item.latest)}
 								</span>
 							)}
-							<span class="series-index__count">{item.count}</span>
-						</a>
-					</li>
+							{item.category && (
+								<span>
+									{i18n(I18nKey.categories)} · {item.category}
+								</span>
+							)}
+						</div>
+						{item.overview && (
+							<p class="series-index__overview">{item.overview}</p>
+						)}
+					</a>
 				))}
-			</ul>
+			</div>
 		)}
 		{items.length === 0 && (
 			<div class="series-index__empty">
@@ -99,26 +118,21 @@ const seriesSummary = `${items.length} ${i18n(items.length === 1 ? I18nKey.serie
 </MainGridLayout>
 
 <style lang="stylus">
-@import "../styles/breakpoints.styl"
-
 .series-index
 	display: block
 
 	&__list
-		display: grid
-		grid-template-columns: repeat(2, minmax(0, 1fr))
-		gap: var(--m3e-space-2) var(--m3e-space-4)
-		margin: 0
-		padding: 0
-		list-style: none
-
-	&__row
 		display: flex
-		align-items: center
-		gap: var(--m3e-space-3)
-		min-height: 3.5rem
-		padding: var(--m3e-space-3) var(--m3e-space-4)
-		border-radius: var(--shape-corner-m)
+		flex-direction: column
+		gap: var(--m3e-space-4)
+		margin-top: var(--m3e-space-4)
+
+	&__card
+		display: flex
+		flex-direction: column
+		gap: var(--m3e-space-2)
+		padding: var(--m3e-space-4) var(--m3e-space-5)
+		border-radius: var(--shape-corner-l)
 		background: var(--surface-container-low)
 		text-decoration: none
 		--m3e-state-color: var(--on-surface)
@@ -126,15 +140,23 @@ const seriesSummary = `${items.length} ${i18n(items.length === 1 ? I18nKey.serie
 		&:hover
 			background: unquote("color-mix(in oklab, var(--on-surface) 6%, transparent)")
 
-	&__name
-		font: var(--m3e-type-body-large)
-		font-weight: 500
+	&__head
+		display: flex
+		align-items: center
+		gap: var(--m3e-space-3)
+		min-width: 0
+
+	&__title
+		font: var(--m3e-type-title-medium)
+		font-weight: 600
 		color: var(--on-surface)
 		white-space: nowrap
 		overflow: hidden
 		text-overflow: ellipsis
 
 	&__status
+		margin-left: auto
+		flex-shrink: 0
 		display: inline-flex
 		align-items: center
 		padding: 0.125rem 0.625rem
@@ -145,24 +167,25 @@ const seriesSummary = `${items.length} ${i18n(items.length === 1 ? I18nKey.serie
 		font-weight: 600
 		white-space: nowrap
 
-	&__rule
-		flex: 1
-		align-self: flex-end
-		margin-bottom: 0.35em
-		min-width: 0.75rem
-		border-bottom: 2px dotted var(--outline-variant)
-
-	&__date
-		font: var(--m3e-type-label-small)
+	&__meta
+		display: flex
+		flex-wrap: wrap
+		align-items: center
+		font: var(--m3e-type-body-small)
 		color: var(--on-surface-variant)
-		white-space: nowrap
 
-	&__count
-		font: var(--m3e-type-title-small)
-		font-weight: 600
-		font-variant-numeric: tabular-nums
+		span + span::before
+			content: "·"
+			margin: 0 var(--m3e-space-2)
+
+	&__overview
+		margin: 0
+		font: var(--m3e-type-body-medium)
 		color: var(--on-surface-variant)
-		white-space: nowrap
+		display: -webkit-box
+		-webkit-line-clamp: 2
+		-webkit-box-orient: vertical
+		overflow: hidden
 
 	&__empty
 		display: flex
@@ -171,8 +194,4 @@ const seriesSummary = `${items.length} ${i18n(items.length === 1 ? I18nKey.serie
 		min-height: 11rem
 		color: var(--on-surface-variant)
 		font: var(--m3e-type-body-large)
-
-	@media (max-width: bp-sm - 1px)
-		&__list
-			grid-template-columns: 1fr
 </style>

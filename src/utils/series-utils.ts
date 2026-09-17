@@ -25,6 +25,32 @@ export interface SeriesPostContext extends SeriesContext {
 	next: SeriesPostRef | null;
 }
 
+/**
+ * 从系列总览 Markdown 提取纯文本摘要（供系列索引页大卡片展示）。
+ * 只做轻量清洗：去代码块/图片/标题标记/列表符号/强调符/HTML，
+ * 链接保留锚文本；按词边界截断并追加省略号。
+ */
+export function excerptFromMarkdown(markdown: string, maxChars = 160): string {
+	const text = markdown
+		.replace(/```[\s\S]*?```/g, " ")
+		.replace(/`([^`]*)`/g, "$1")
+		.replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+		.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+		.replace(/^\s{0,3}#{1,6}\s+/gm, "")
+		.replace(/^\s{0,3}>+\s?/gm, "")
+		.replace(/^\s*[-*+]\s+/gm, "")
+		.replace(/^\s*\d+\.\s+/gm, "")
+		.replace(/[*_~]{1,3}([^*_~]+)[*_~]{1,3}/g, "$1")
+		.replace(/<[^>]+>/g, "")
+		.replace(/\s+/g, " ")
+		.trim();
+
+	if (text.length <= maxChars) return text;
+	const cut = text.slice(0, maxChars);
+	const lastSpace = cut.lastIndexOf(" ");
+	return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
+}
+
 export interface SeriesMemberInput {
 	slug: string;
 	title: string;
