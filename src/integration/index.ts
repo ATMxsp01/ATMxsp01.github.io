@@ -430,6 +430,9 @@ function prebundleCandidates(
 	// warns once per entry on every cold start. Node's `require.resolve` is not
 	// a reliable proxy for what Vite can reach, so simply skip the hint there.
 	if (paths.isPluginMode) return [];
+	// Everywhere else — source mode above all — the specifiers are the
+	// repository's own dependencies, already installed under the project root
+	// that Vite resolves from, so the hint is both visible and useful.
 	return specifiers;
 }
 

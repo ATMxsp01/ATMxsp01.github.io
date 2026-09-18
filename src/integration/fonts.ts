@@ -161,6 +161,13 @@ const METING_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Shirone/1.0
  *
  * Gated by `fontConfig.subsetting.allowRemoteText`; any failure degrades to a
  * warning — remote text is an enhancement, never a build blocker.
+ *
+ * `registryRef` carries the user's component/config overrides and only exists
+ * in package mode. Source mode has no `shirones/` overlay at all, but that
+ * needs no special case here: `paths.configDir` already resolves to the
+ * repository's own `src/config` in that mode, so `loadConfigModule` reads the
+ * repo's `musicConfig` on its first probe and the package-source fallback it
+ * would otherwise take points at the very same directory.
  */
 async function collectMetingText(
 	paths: ResolvedShironesPaths,
