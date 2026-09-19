@@ -49,7 +49,10 @@ export function findPackageRoot(fromUrl: string): string {
  * Every branch in the integration only ever needs one question: is the theme
  * building itself? If not, it is a dependency — however it reached the disk.
  */
-export function detectThemeRepo(projectRoot: string, packageRoot: string): boolean {
+export function detectThemeRepo(
+	projectRoot: string,
+	packageRoot: string,
+): boolean {
 	// `config.root` arrives as a `file:` URL *with* a trailing slash, so
 	// `fileURLToPath` yields `/path/to/repo/` while `findPackageRoot()` returns
 	// `/path/to/repo`. Strip the trailing separator before comparing, or every
@@ -93,10 +96,16 @@ export function resolvePaths(
 			? join(packageSrc, "config")
 			: join(contentRoot, "config");
 
+	// The two layouts are deliberately asymmetric: a scaffolded project nests
+	// its data modules under `shirones/config/data/`, while the repository keeps
+	// them as a sibling of `src/config/`, in `src/data/`. Reading the
+	// package-mode shape here (`src/config/data`, which does not exist) made the
+	// font pipeline silently skip every `src/data/*.ts` module when subsetting,
+	// dropping glyphs that appear only in friends/projects/anime entries.
 	const dataDir = options.paths?.data
 		? toAbsolute(projectRoot, options.paths.data)
 		: isThemeRepo
-			? join(packageSrc, "config", "data")
+			? join(packageSrc, "data")
 			: join(configDir, "data");
 
 	const contentDir = options.paths?.content

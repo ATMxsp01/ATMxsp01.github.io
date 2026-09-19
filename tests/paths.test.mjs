@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
 import test, { after } from "node:test";
+import { pathToFileURL } from "node:url";
 import {
 	detectThemeRepo,
 	findPackageRoot,
@@ -41,7 +41,10 @@ test("detects the theme's own repository checkout", () => {
 	assert.equal(paths.isThemeRepo, true);
 	// The "user" directories point back at the repository's own layout.
 	assert.equal(paths.configDir, join(themeRoot, "src", "config"));
-	assert.equal(paths.dataDir, join(themeRoot, "src", "config", "data"));
+	// Data modules sit *beside* `src/config/` in the repository, not under it.
+	// Reading the package-mode shape here silently pointed the font pipeline at
+	// a directory that does not exist.
+	assert.equal(paths.dataDir, join(themeRoot, "src", "data"));
 	assert.equal(paths.contentDir, join(themeRoot, "src", "content"));
 });
 
@@ -53,6 +56,7 @@ test("detects an installed npm package", () => {
 	);
 	assert.equal(paths.isThemeRepo, false);
 	assert.equal(paths.configDir, join(siteRoot, "shirones", "config"));
+	// …where a scaffolded project nests them under the config directory.
 	assert.equal(paths.dataDir, join(siteRoot, "shirones", "config", "data"));
 	assert.equal(paths.contentDir, join(siteRoot, "shirones", "content"));
 });
@@ -85,7 +89,11 @@ test("explicit paths options win in every mode", () => {
 		},
 	};
 	for (const [label, root, mod] of [
-		["theme repo", themeRoot, join(themeRoot, "src", "integration", "index.ts")],
+		[
+			"theme repo",
+			themeRoot,
+			join(themeRoot, "src", "integration", "index.ts"),
+		],
 		["installed", siteRoot, join(installedRoot, "index.js")],
 	]) {
 		const paths = resolvePaths(overrides, rootUrl(root), url(mod));
