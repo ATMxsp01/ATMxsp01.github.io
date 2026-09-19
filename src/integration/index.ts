@@ -4,17 +4,17 @@ import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { AstroIntegration } from "astro";
 import {
-	IMAGE_ENDPOINT_ROUTE,
-	MUSIC_SIDEBAR_VIRTUAL_ID,
-	TRAILING_SLASH,
 	expressiveCodeShared,
+	IMAGE_ENDPOINT_ROUTE,
 	iconInclude,
 	isMusicBundleFile,
+	MUSIC_SIDEBAR_VIRTUAL_ID,
 	mdxOptions,
 	prebundleSpecifiers,
 	svelteCompilerOptions,
 	swupForwardOptions,
 	swupOptions,
+	TRAILING_SLASH,
 	viteBuildShared,
 } from "../config/integrationsConfig.ts";
 import { shironesFallbackResolver } from "./fallback-resolver.ts";
@@ -26,7 +26,12 @@ import {
 } from "./load-config.ts";
 import { shironesOverlay } from "./overlay.ts";
 import { normalisePath, resolvePaths } from "./paths.ts";
-import { buildOverrideRegistry, createOverlayTargets, type OverrideRegistryRef } from "./registry.ts";
+import {
+	buildOverrideRegistry,
+	createOverlayTargets,
+	findOrphanUserFiles,
+	type OverrideRegistryRef,
+} from "./registry.ts";
 import { collectRoutes, filterRoutes } from "./routes.ts";
 import { shironesSsrNodeShims } from "./ssr-node-shims.ts";
 import type { ResolvedShironesPaths, ShironesOptions } from "./types.ts";
@@ -185,11 +190,29 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 						);
 						if (total > 0) {
 							logger.info(
-								`[overrides] ${total} registered (${Object.entries(registry.counts)
+								`[overrides] ${total} registered (${Object.entries(
+									registry.counts,
+								)
 									.map(([label, n]) => `${label}:${n}`)
 									.join(", ")})`,
 							);
 						}
+					}
+
+					// Report config files the theme no longer knows about. An
+					// upgrade that renames a config module leaves exactly this
+					// behind: the integration asks for the new name, finds
+					// neither copy, and silently uses the packaged default while
+					// the user's edits sit unread in their project.
+					const orphans = findOrphanUserFiles(paths);
+					if (orphans.length > 0) {
+						logger.warn(
+							`[overrides] ${orphans.length} config file(s) match no module ` +
+								"the theme loads, so they are never read:\n" +
+								`${orphans.map((file) => `  - ${file}`).join("\n")}\n` +
+								"  This usually means the theme renamed a config module — " +
+								"check the release notes and move your edits across.",
+						);
 					}
 				}
 
@@ -201,25 +224,41 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				}
 
 				// ── 1. Load user configuration (Node side) ──────────────────────
-				const siteModule = await loadConfigModule(paths, "siteConfig", registryRef);
+				const siteModule = await loadConfigModule(
+					paths,
+					"siteConfig",
+					registryRef,
+				);
 				const siteConfig = siteModule.siteConfig as {
 					site?: string;
 					base?: string;
 				};
 
-				const sidebarModule = await loadConfigModule(paths, "sidebarConfig", registryRef);
+				const sidebarModule = await loadConfigModule(
+					paths,
+					"sidebarConfig",
+					registryRef,
+				);
 				const sidebarConfig = sidebarModule.sidebarConfig as {
 					enable?: boolean;
 					components?: { type: string; enable: boolean }[];
 				};
 
-				const musicModule = await loadConfigModule(paths, "musicConfig", registryRef);
+				const musicModule = await loadConfigModule(
+					paths,
+					"musicConfig",
+					registryRef,
+				);
 				const musicConfig = musicModule.musicConfig;
 				const resolveMusicOptions = musicModule.resolveMusicOptions as (
 					c: unknown,
 				) => unknown;
 
-				const umamiModule = await loadConfigModule(paths, "umamiConfig", registryRef);
+				const umamiModule = await loadConfigModule(
+					paths,
+					"umamiConfig",
+					registryRef,
+				);
 				const umamiConfig = umamiModule.umamiConfig as { shareUrl: string };
 				const resolveUmamiOptions = umamiModule.resolveUmamiOptions as (
 					c: unknown,
@@ -244,6 +283,9 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				const fonts = await buildFontDeclarations(
 					paths,
 					{
+						// Subsetting only on `build` keeps `astro dev` free of the
+						// charset scan; `fonts.ts` additionally requires
+						// `fontConfig.subsetting.enable`, so both must hold.
 						subset: options.fonts?.subset ?? command === "build",
 						extraCharacters: options.fonts?.extraCharacters ?? "",
 					},
@@ -442,9 +484,18 @@ export function prebundleCandidates(
  * Instantiate the integrations the theme depends on. Users get them for free so
  * a fresh project only needs `integrations: [shirones()]`.
  */
+/**
+ * The `command` value `astro:config:setup` hands us, derived from the hook
+ * signature rather than spelled out: Astro has grown values here before
+ * (`sync`, `preview`), and a hand-written union silently goes stale.
+ */
+type ConfigCommand = Parameters<
+	NonNullable<AstroIntegration["hooks"]["astro:config:setup"]>
+>[0]["command"];
+
 async function createBundledIntegrations(
 	paths: ResolvedShironesPaths,
-	command: string,
+	command: ConfigCommand,
 	options: { umamiConfig: { shareUrl: string }; umamiEnabled: boolean },
 	registryRef?: { overrides: Map<string, string> },
 ) {
@@ -475,7 +526,11 @@ async function createBundledIntegrations(
 			})
 		: null;
 
-	const ecModule = await loadConfigModule(paths, "expressiveCodeConfig", registryRef);
+	const ecModule = await loadConfigModule(
+		paths,
+		"expressiveCodeConfig",
+		registryRef,
+	);
 	const expressiveCodeConfig = ecModule.expressiveCodeConfig as {
 		theme: string;
 		lightTheme?: string;
@@ -498,7 +553,8 @@ async function createBundledIntegrations(
 	const badge = await loadPackageModule(
 		paths,
 		"plugins/expressive-code/language-badge.ts",
-	);	const copyButton = await loadPackageModule(
+	);
+	const copyButton = await loadPackageModule(
 		paths,
 		"plugins/expressive-code/custom-copy-button.js",
 	);

@@ -36,9 +36,14 @@ export interface ShironesPaths {
 
 export interface ShironesFontOptions {
 	/**
-	 * Run the build-time font subsetting pipeline.
-	 * When enabled, subset `.woff2` files are emitted into `<root>/.shirones/fonts/`.
-	 * Falls back to the value of `fontConfig.subsetting.enable` when omitted.
+	 * Run the build-time font subsetting pipeline. When enabled, subset
+	 * `.woff2` files are emitted into `<root>/.shirones/fonts/`.
+	 *
+	 * Defaults to `command === "build"`, so `astro dev` serves the full font
+	 * files and only `astro build` pays for the charset scan and the
+	 * `subset-font` run. This is *combined* with
+	 * `fontConfig.subsetting.enable`, not a fallback for it: both must hold, so
+	 * setting `enable: true` on its own still leaves dev unsubsetted.
 	 */
 	subset?: boolean;
 	/**
