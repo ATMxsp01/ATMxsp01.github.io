@@ -59,9 +59,9 @@ export const FONT_OUTPUT_DIRNAME = "fonts";
 
 /** Absolute path of the directory holding generated subsets. */
 export function fontCacheDir(paths: ResolvedShironesPaths): string {
-	if (paths.isInRepo) {
-		// Source mode: the repo's original output location, shared with the
-		// repo scripts and `.gitignore`.
+	if (paths.isThemeRepo) {
+		// The theme's own repository: the original output location, shared
+		// with the repo scripts and `.gitignore`.
 		return join(paths.packageRoot, "src/assets/fonts/.subset");
 	}
 	return join(paths.cacheDir, FONT_OUTPUT_DIRNAME);

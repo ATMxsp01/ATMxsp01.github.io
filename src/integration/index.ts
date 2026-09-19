@@ -166,16 +166,16 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				paths = resolvePaths(options, config.root, import.meta.url);
 
 				logger.info(
-					`${paths.isInRepo ? "in-repo (source)" : paths.isPluginMode ? "plugin" : "source"} mode | content: ${paths.contentDir}`,
+					`${paths.isThemeRepo ? "theme repository" : "installed package"} mode | content: ${paths.contentDir}`,
 				);
 
 				// Scan the package + user project once and register every
 				// override. Resolution becomes a table lookup; in dev the table
 				// is rebuilt when an override file changes (see server:setup).
-				// In-repo (source mode) the theme's own files are the resolution
-				// targets, so the registry stays empty and every lookup falls
-				// through to packageSrc.
-				if (!paths.isInRepo) {
+				// Inside the theme's own repository the theme's files *are* the
+				// resolution targets, so the registry stays empty and every lookup
+				// falls through to packageSrc.
+				if (!paths.isThemeRepo) {
 					const registry = buildOverrideRegistry(paths);
 					registryRef.overrides = registry.overrides;
 					{
@@ -193,7 +193,7 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					}
 				}
 
-				if (paths.isPluginMode && !existsSync(paths.configDir)) {
+				if (!paths.isThemeRepo && !existsSync(paths.configDir)) {
 					logger.warn(
 						`No configuration found at ${paths.configDir}. ` +
 							"Run `npx shirones init` to scaffold it.",
@@ -293,9 +293,9 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 						resolve: { alias: createAliases(paths) },
 						plugins: [
 							// The overlay rewriter redirects user files onto package
-							// files; in-repo every import already resolves to the
-							// real source, so there is nothing to overlay.
-							...(paths.isInRepo
+							// files; inside the theme's own repository every import already
+							// resolves to the real source, so there is nothing to overlay.
+							...(paths.isThemeRepo
 								? []
 								: [
 										shironesOverlay({
@@ -323,15 +323,15 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 						// docs/plans/single-source-config.md (Q3, in the shirones
 						// pipeline repository).
 						build: viteBuildShared,
-						// Source mode re-enables console-stripping for production
-						// builds. Since Astro 7 ships Vite 8 there is no
+						// The theme's own repository build re-enables console-stripping
+						// for production builds. Since Astro 7 ships Vite 8 there is no
 						// `build.esbuild` key any more — the old astro.config.mjs
 						// carried one and it was silently ignored — so the
 						// transform options go to Vite's *top-level* `esbuild`,
 						// which the vite:esbuild plugin applies during builds.
 						// Gated to `command === "build"` so the dev server keeps
 						// its console output.
-						...(paths.isInRepo && command === "build"
+						...(paths.isThemeRepo && command === "build"
 							? {
 									esbuild: {
 										drop: ["debugger"],
@@ -343,7 +343,7 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				});
 
 				// ── 7. Inject the theme's routes ────────────────────────────────
-				if (paths.isPluginMode && options.injectRoutes !== false) {
+				if (!paths.isThemeRepo && options.injectRoutes !== false) {
 					const routes = filterRoutes(
 						collectRoutes(join(paths.packageSrc, "pages")),
 						options.excludeRoutes,
@@ -370,8 +370,8 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					}
 				});
 
-				// In-repo (source mode) there is no override registry to rebuild.
-				if (paths.isInRepo) return;
+				// The theme's own repository has no override registry to rebuild.
+				if (paths.isThemeRepo) return;
 
 				// Rebuild the override registry when an override file changes so
 				// dev picks new/moved/removed overrides up immediately.
@@ -387,11 +387,11 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 			},
 
 			"astro:build:done": async ({ dir, logger }) => {
-				// Source mode keeps the repo's `pagefind --site dist` CLI build
-				// step, which honours the repository's `pagefind.yml` (workers,
-				// exclusions, ...). Indexing here as well would build the index
-				// twice.
-				if (options.pagefind === false || paths.isInRepo) return;
+				// The theme's own repository keeps its `pagefind --site dist` CLI
+				// build step, which honours the repository's `pagefind.yml`
+				// (workers, exclusions, ...). Indexing here as well would build
+				// the index twice.
+				if (options.pagefind === false || paths.isThemeRepo) return;
 				const outDir = dir.pathname;
 				try {
 					const pagefind = await import("pagefind");
@@ -412,27 +412,29 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 }
 
 /**
- * Filter a list of bare specifiers down to those Node can resolve from the
- * user's project root.
+ * Decide which bare specifiers to list in `vite.optimizeDeps.include`.
+ * Exported for tests: this is one of the three gates that used to key off
+ * `isPluginMode` and silently misbehaved for a linked install.
  *
  * Vite resolves `optimizeDeps.include` relative to the project root. When the
- * theme is installed with pnpm, its own dependencies live under
- * `node_modules/.pnpm/...` and are invisible from there, so every unresolvable
- * entry produces a "Failed to resolve dependency" warning.
+ * theme is a dependency its own dependencies live under `node_modules/.pnpm/`
+ * (or in a linked checkout's own tree) and are invisible from there, so every
+ * unresolvable entry produces a "Failed to resolve dependency" warning.
  */
-function prebundleCandidates(
+export function prebundleCandidates(
 	paths: ResolvedShironesPaths,
 	specifiers: string[],
 ): string[] {
-	// Pre-bundling is a dev-server nicety. In package mode these libraries live
-	// inside the theme's own `node_modules`, where Vite — which resolves
-	// `optimizeDeps.include` from the *project* root — cannot see them, and it
-	// warns once per entry on every cold start. Node's `require.resolve` is not
-	// a reliable proxy for what Vite can reach, so simply skip the hint there.
-	if (paths.isPluginMode) return [];
-	// Everywhere else — source mode above all — the specifiers are the
-	// repository's own dependencies, already installed under the project root
-	// that Vite resolves from, so the hint is both visible and useful.
+	// Pre-bundling is a dev-server nicety. Once the theme is a dependency its
+	// libraries live in *its* `node_modules` — under `.pnpm/` when installed, or
+	// in a linked checkout's own tree — where Vite, which resolves
+	// `optimizeDeps.include` from the *project* root, cannot see them, and it
+	// warns once per entry on every cold start. Node's `require.resolve` is not a
+	// reliable proxy for what Vite can reach, so simply skip the hint.
+	if (!paths.isThemeRepo) return [];
+	// Inside the theme's own repository the specifiers *are* the project's
+	// dependencies, installed under the root Vite resolves from, so the hint is
+	// both visible and useful.
 	return specifiers;
 }
 

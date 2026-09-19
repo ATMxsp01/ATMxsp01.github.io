@@ -106,12 +106,15 @@ export interface ResolvedShironesPaths {
 	contentDir: string;
 	/** Absolute path to the package-managed cache dir (`<root>/.shirones`). */
 	cacheDir: string;
-	/** True when running from `node_modules` (npm package mode). */
-	isPluginMode: boolean;
 	/**
 	 * True when the integration runs from the theme's own repository checkout
-	 * (the git-clone/source workflow). The repo build then relies on the
-	 * integration for everything `astro.config.mjs` used to spell out.
+	 * (the `git clone` workflow). The repo build then relies on the integration
+	 * for everything `astro.config.mjs` used to spell out.
+	 *
+	 * False means the theme is being consumed as a dependency — whether it was
+	 * installed from npm or linked from a neighbouring checkout — and therefore
+	 * owns route injection, expects a scaffolded `shirones/config`, and cannot
+	 * assume its own `node_modules` is visible from the project root.
 	 */
-	isInRepo: boolean;
+	isThemeRepo: boolean;
 }
