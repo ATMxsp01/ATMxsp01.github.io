@@ -63,7 +63,9 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
-          version: 9.14.4
+          # 不写 version：pnpm/action-setup 会读 package.json 的 packageManager
+          # （与上游 deploy.yml.example 一致）。写死会与 packageManager 冲突，
+          # action 直接报 "Multiple versions of pnpm specified"（2026-10-18 实测）。
           run_install: false
 
       - name: Set up Node.js
