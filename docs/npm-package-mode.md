@@ -137,7 +137,7 @@ pnpm's strict layout, so the source repository never sees them:
 
 - **Bare imports inside the package** — Vite resolves them from the *project*
   root and fails (`@astrojs/svelte/server.js`, all the `@swup/astro/*` entries).
-  `src/integration/fallback-resolver.ts` retries the failed ones with the
+  `src/integration/vite/fallback-resolver.ts` retries the failed ones with the
   package itself as importer. In `astro dev` the retry has to see through
   truthy stand-ins first: Vite's builtin dev resolver answers an unresolvable
   bare specifier from a virtual importer (like `astro:scripts/page.js`) with a
@@ -149,9 +149,24 @@ pnpm's strict layout, so the source repository never sees them:
   `@iconify-json/*` must really exist in the user's project. They are peer
   dependencies and `init` installs them. Same story for `sharp`, which Astro's
   image service imports dynamically.
+
+  Do not read that as a *resolution* problem and move the iconify sets into the
+  theme's `dependencies` to fix it. They resolve fine from inside the package —
+  verified with a real tarball install: both the theme's own
+  `src/integration/vite/icon/collections.ts` (which anchors on
+  `createRequire(import.meta.url)`) and astro-icon's fs loader (which anchors on
+  `process.cwd()`) find the sibling `node_modules` under pnpm's layout. What
+  breaks is astro-icon's *detection* step: `detectInstalledCollections(root)`
+  reads the **user's** `package.json` and only iterates that list, so the sets
+  go missing from the virtual `astro-icon` module even though the files are
+  reachable — every `<Icon name="material-symbols:home">` then throws. See
+  `docs/troubleshooting.md` in the packaging repository. The theme-side
+  `localIconCollections` path (used by `Icon.svelte` and the
+  `@shirone/iconify-offline` component) has no such gate, which is what makes it
+  the escape hatch if astro-icon is ever dropped.
 - **CommonJS deps that get inlined into the SSR bundle** — `stylus` reads
   `__dirname` and then loads `lib/functions/index.styl` from disk.
-  `src/integration/ssr-node-shims.ts` gives every bundled CJS module its real
+  `src/integration/vite/ssr-node-shims.ts` gives every bundled CJS module its real
   `__dirname` / `__filename` back.
 - **Images next to content** — `import.meta.glob("../../**")` inside a component
   can never reach `<project>/shirones/…`. `src/utils/project-images.ts` adds a
