@@ -147,13 +147,12 @@ async function mergeDirectory(from, to, { force }) {
 				await walk(nextSource, nextTarget);
 				continue;
 			}
-			let saved;
 			if (existsSync(nextTarget) && !force) {
 				kept += 1;
 				continue;
 			}
 			if (existsSync(nextTarget) && force) {
-				saved = await backup(relative(CWD, nextTarget));
+				await backup(relative(CWD, nextTarget));
 			}
 			await cp(nextSource, nextTarget, { force: true });
 			added += 1;
@@ -308,7 +307,7 @@ async function ensurePackageJson(
 			private: true,
 			type: "module",
 			// Pin the same package manager the theme is developed with (e.g.
-			// pnpm@9.x) so `.npmrc`'s `manage-package-manager-versions` and
+			// pnpm@11.28.2) so `.npmrc`'s `manage-package-manager-versions` and
 			// CI hosts (Vercel, corepack) resolve the intended pnpm.
 			...(packageManager ? { packageManager } : {}),
 			scripts: {
